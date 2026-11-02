@@ -4,6 +4,7 @@ import { seedAll } from '@/db/seed';
 import { db } from '@/db/client';
 import { srcEmployee, processHistory } from '@/db/schema';
 import { recordHistory } from '@/lib/history';
+import { loadRules } from '@/lib/rules';
 
 describe('통합 테스트 환경', () => {
   beforeEach(async () => {
@@ -23,4 +24,14 @@ describe('통합 테스트 환경', () => {
     const [r] = await db.select({ n: count() }).from(processHistory);
     expect(r.n).toBe(1);
   });
+
+  it('승진승급 규칙 설정값을 읽는다', async () => {
+    const rules = await loadRules();
+
+    // G6 최소 필요 개월 수 확인
+    expect(rules.minMonths.G6).toBe(36);
+    // SUSPENSION 제한 개월 수 확인
+    expect(rules.restrictMonths.SUSPENSION).toBe(18);
+  });
+
 });

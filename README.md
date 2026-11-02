@@ -444,10 +444,10 @@ git log --oneline   # 커밋 1개가 보이면 성공
 
 ### 완료 확인
 
-- [ ] `npm run db:reset` → "시드 완료"
-- [ ] `npm test` → 2 files, 8 tests 통과
-- [ ] `npm run build` → 오류 없이 끝남
-- [ ] Drizzle Studio에서 행 수가 아래와 같다
+- [x] `npm run db:reset` → "시드 완료"
+- [x] `npm test` → 2 files, 8 tests 통과
+- [x] `npm run build` → 오류 없이 끝남
+- [x] Drizzle Studio에서 행 수가 아래와 같다
 
 | 테이블            | 행 수 |     | 테이블                   | 행 수 |
 | ----------------- | ----- | --- | ------------------------ | ----- |
@@ -457,8 +457,8 @@ git log --oneline   # 커밋 1개가 보이면 성공
 | `src_evaluation`  | 34    |     | `rule_config`            | 13    |
 | `src_training`    | 34    |     | 나머지 본 시스템 테이블  | 0     |
 
-- [ ] `git status`에 `.db` 파일과 `.env`가 나오지 않는다
-- [ ] `git log --oneline`에 첫 커밋이 보인다
+- [x] `git status`에 `.db` 파일과 `.env`가 나오지 않는다
+- [x] `git log --oneline`에 첫 커밋이 보인다
 
 ---
 
@@ -486,8 +486,8 @@ git log --oneline   # 커밋 1개가 보이면 성공
 
 - [ ] `maskPhone('010-2001-1001')` → `'010-****-1001'`, `gradeLabel('G6')` → `'6급'`, `orDash(null)` → `'-'`
 - [ ] `loadRules()`로 읽은 `minMonths.G6`이 `36`, `restrictMonths.SUSPENSION`이 `18`이다 (통합 테스트)
-- [ ] `hr01`로 전환하면 인사팀 메뉴가, `u1001`로 전환하면 직원 메뉴가 보인다
-- [ ] `u1001`인 상태에서 주소창에 `http://localhost:3000/hr/rounds`를 입력하면 들어갈 수 없다 (전환 화면이나 직원 홈으로 이동)
+- [x] `hr01`로 전환하면 인사팀 메뉴가, `u1001`로 전환하면 직원 메뉴가 보인다
+- [x] `u1001`인 상태에서 주소창에 `http://localhost:3000/hr/rounds`를 입력하면 들어갈 수 없다 (전환 화면이나 직원 홈으로 이동)
 - [ ] `npm test`, `npm run build` 통과 → 커밋
 
 ---
