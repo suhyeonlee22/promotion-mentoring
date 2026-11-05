@@ -52,11 +52,14 @@ export const MAIL_TYPES = {
 } as const;
 
 /** 요구사항 3.7. year 항목은 기준일 연도 기준으로 만든다 */
-export const ITEM_DEFS: {
+export function getApplicationItemDefs(baseDate: string): {
   key: string;
   label: string;
   correctable: boolean;
-}[] = [
+}[] {
+  const baseYear = Number(baseDate.slice(0, 4));
+  const years = [baseYear - 2, baseYear - 1, baseYear];
+  return [
   { key: "name", label: "성명", correctable: false },
   { key: "org", label: "소속", correctable: true },
   { key: "grade", label: "현 직급", correctable: false },
@@ -65,13 +68,13 @@ export const ITEM_DEFS: {
   { key: "grade_date", label: "현 직급 임용일", correctable: true },
   { key: "qualify_date", label: "소요기간 충족일", correctable: false },
 
-  ...[2024, 2025, 2026].map((year) => ({
+  ...years.map((year) => ({
     key: `rating_${year}`,
     label: `${year}년 근무평정`,
     correctable: true,
   })),
 
-  ...[2024, 2025, 2026].map((year) => ({
+  ...years.map((year) => ({
     key: `training_${year}`,
     label: `${year}년 교육이수시간`,
     correctable: true,
@@ -80,3 +83,7 @@ export const ITEM_DEFS: {
   { key: "awards", label: "포상", correctable: true },
   { key: "disciplines", label: "징계", correctable: true },
 ];
+}
+
+// 기존 기준일의 고정 정의도 유지한다.
+export const ITEM_DEFS = getApplicationItemDefs("2026-12-31");

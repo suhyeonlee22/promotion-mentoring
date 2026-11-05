@@ -11,6 +11,8 @@ import {
   submitApplication,
   approveCorrection,
   rejectCorrection,
+  confirmApplication,
+  returnApplication,
 } from "./applications";
 
 vi.mock("next/headers", () => ({
@@ -554,5 +556,107 @@ describe("STEP 7 신청서 통합 테스트 (test.db 전용)", () => {
     expect(updated.status).toBe("NOT_STARTED");
     expect(updated.achievement).toBe(otherApp.achievement);
     expect(updated.plan).toBe(otherApp.plan);
+  });
+
+  it("정상 확정 시 CONFIRMED 상태와 이력이 생성된다", async () => {
+    // 1. 준비: 신청서 생성
+    const app = await prepareApplication();
+
+    // 2. 준비: 임시 저장
+    // saveDraft() 참고
+    await saveDraft(employee, app.appId, {
+      achievement: "2026년 주요 업무 성과",
+      plan: "향후 업무 계획",
+    });
+
+    // 3. 준비: 제출
+    // submitApplication() 참고
+    await submitApplication(employee, app.appId, {
+      achievement: "2026년 주요 업무 성과",
+      plan: "향후 업무 계획",
+    });
+
+    // 4. 실행: 인사팀 확정
+    // confirmApplication() 호출
+    await confirmApplication(hr, app.appId);
+
+    // 5. 검증: DB에서 신청서 다시 조회
+    const [updated] = await db
+      .select()
+      .from(s.application)
+      .where(eq(s.application.appId, app.appId));
+
+    // 6. 검증: 상태와 확정 시각 확인
+    // expect() 사용
+    expect(updated.status).toBe("CONFIRMED");
+    expect(updated.confirmedAt).not.toBeNull();
+
+    // 7. 검증: 처리 이력 확인
+    // processHistory 테이블 조회 후 expect() 사용
+    const histories = await db
+      .select()
+      .from(s.processHistory)
+      .where(eq(s.processHistory.action, "APP_CONFIRMED"));
+    expect(histories).toHaveLength(1);
+    expect(histories[0].entityId).toBe(String(app.appId));
+  });
+
+  it("반려 시 RETURNED 상태와 이력이 생성된다", async () => {
+    // 1. 준비: 신청서 생성
+    const app = await prepareApplication();
+    // 2. 준비: 임시 저장
+    await saveDraft(employee, app.appId, {
+      achievement: "2026년 주요 업무 성과",
+      plan: "향후 업무 계획",
+    });
+    // 3. 준비: 제출
+    await submitApplication(employee, app.appId, {
+      achievement: "2026년 주요 업무 성과",
+      plan: "향후 업무 계획",
+    });
+    // 4. 실행: 인사팀 반려
+    await returnApplication(hr, app.appId, "신청서 내용이 부적절합니다.");
+    // 5. 검증: DB에서 신청서 다시 조회
+    const [updated] = await db
+      .select()
+      .from(s.application)
+      .where(eq(s.application.appId, app.appId));
+    // 6. 검증: 상태와 반려 사유 확인
+    expect(updated.status).toBe("RETURNED");
+    expect(updated.returnReason).toBe("신청서 내용이 부적절합니다.");
+    // 7. 검증: 처리 이력 확인
+    const histories = await db
+      .select()
+      .from(s.processHistory)
+      .where(eq(s.processHistory.action, "APP_RETURNED"));
+    expect(histories).toHaveLength(1);
+    expect(histories[0].entityId).toBe(String(app.appId));
+    expect(histories[0].reason).toBe("신청서 내용이 부적절합니다.");
+  });
+
+  it("반려 시 반드시 사유를 입력해야 한다", async () => {
+    // 1. 준비: 신청서 생성
+    const app = await prepareApplication();
+    // 2. 준비: 임시 저장
+    await saveDraft(employee, app.appId, {
+      achievement: "2026년 주요 업무 성과",
+      plan: "향후 업무 계획",
+    });
+    // 3. 준비: 제출
+    await submitApplication(employee, app.appId, {
+      achievement: "2026년 주요 업무 성과",
+      plan: "향후 업무 계획",
+    });
+    // 4. 실행: 인사팀 반려 시 사유 없이 호출
+    await expect(returnApplication(hr, app.appId, "")).rejects.toMatchObject({
+      code: "REASON_REQUIRED",
+    });
+    // 5. 검증: DB에서 신청서 다시 조회
+    const [updated] = await db
+      .select()
+      .from(s.application)
+      .where(eq(s.application.appId, app.appId));
+    // 6. 검증: 상태가 여전히 SUBMITTED인지 확인
+    expect(updated.status).toBe("SUBMITTED");
   });
 });

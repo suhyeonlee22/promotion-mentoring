@@ -12,6 +12,7 @@ import type { Tx } from "@/lib/history";
 import { recordHistory } from "@/lib/history";
 import { createNotification } from "@/lib/notify";
 import { recordAccess, getClientIp } from "@/lib/access-log";
+import { TEXT_PLAIN_CONTENT_TYPE_HEADER } from "next/dist/lib/constants";
 
 // 로그인한 사용자가 직원인지 확인
 // 인사팀이나 심사위원은 직원용 신청서 작성 함수 사용할 수 없음
@@ -530,6 +531,141 @@ export async function rejectCorrection(
       fromStatus: "PENDING",
       toStatus: "REJECTED",
       reason: feedback.trim(),
+      actor: me.userId,
+    });
+  });
+}
+
+// 인사팀 신청서 보완 요청
+export async function returnApplication(
+  me: CurrentUser | null,
+  appId: number,
+  reason: string,
+): Promise<void> {
+  // 1. 인사팀 권한
+  if (me?.role !== "HR") {
+    throw new BusinessError(
+      "FORBIDDEN",
+      "인사팀만 신청서를 반려할 수 있습니다.",
+    );
+  }
+
+  // 2. 반려 사유 검사
+  if (!reason.trim()) {
+    throw new BusinessError("REASON_REQUIRED", "반려 사유를 입력해야 합니다.");
+  }
+  // tracsaction 시작
+  await db.transaction(async (tx) => {
+    // 3. 신청서 조회
+    const [app] = await tx
+      .select()
+      .from(application)
+      .where(eq(application.appId, appId));
+    // 4. 신청서 존재 여부 확인
+    if (!app) {
+      throw new BusinessError("NOT_FOUND", "신청서를 찾을 수 없습니다.");
+    }
+    // 5. 회차 조회
+    const [round] = await tx
+      .select()
+      .from(promotionRound)
+      .where(eq(promotionRound.roundId, app.roundId));
+    // 6. 회차 상태 확인
+    if (!round || !["APPLYING", "REVIEWING"].includes(round.status)) {
+      throw new BusinessError(
+        "INVALID_ROUND",
+        "현재 신청서를 반려할 수 없는 회차입니다.",
+      );
+    }
+    // 7. 신청서 상태 확인
+    if (app.status !== "SUBMITTED") {
+      throw new BusinessError(
+        "INVALID_APPLICATION",
+        "현재 반려할 수 없는 신청서 상태입니다.",
+      );
+    }
+
+    // 8. 신청서 반려 처리
+    await tx
+      .update(application)
+      .set({
+        status: "RETURNED",
+        returnReason: reason.trim(),
+      })
+      .where(eq(application.appId, appId));
+
+    // 9. 처리 이력 기록
+    await recordHistory(tx, {
+      entityType: "APPLICATION",
+      entityId: String(appId),
+      action: "APP_RETURNED",
+      fromStatus: "SUBMITTED",
+      toStatus: "RETURNED",
+      reason: reason.trim(),
+      actor: me.userId,
+    });
+  });
+}
+
+export async function confirmApplication(
+  me: CurrentUser | null,
+  appId: number,
+): Promise<void> {
+  // 1. 인사팀 권한
+  if (me?.role !== "HR") {
+    throw new BusinessError(
+      "FORBIDDEN",
+      "인사팀만 신청서를 확정할 수 있습니다.",
+    );
+  }
+  // tracsaction 시작
+  await db.transaction(async (tx) => {
+    // 2. 신청서 조회
+    const [app] = await tx
+      .select()
+      .from(application)
+      .where(eq(application.appId, appId));
+
+    // 3. 신청서 존재 여부 확인
+    if (!app) {
+      throw new BusinessError("NOT_FOUND", "신청서를 찾을 수 없습니다.");
+    }
+
+    // 4. 회차 조회
+    const [round] = await tx
+      .select()
+      .from(promotionRound)
+      .where(eq(promotionRound.roundId, app.roundId));
+
+    // 5. 회차 상태 확인
+    if (!round || !["APPLYING", "REVIEWING"].includes(round.status)) {
+      throw new BusinessError(
+        "INVALID_ROUND",
+        "현재 신청서를 확정할 수 없는 회차입니다.",
+      );
+    }
+    // 6. 신청서 상태 확인
+    if (app.status !== "SUBMITTED") {
+      throw new BusinessError(
+        "INVALID_APPLICATION",
+        "현재 확정할 수 없는 신청서 상태입니다.",
+      );
+    }
+    // 7. 신청서 확정 처리
+    await tx
+      .update(application)
+      .set({
+        status: "CONFIRMED",
+        confirmedAt: new Date().toISOString(),
+      })
+      .where(eq(application.appId, appId));
+    // 8. 처리 이력 기록
+    await recordHistory(tx, {
+      entityType: "APPLICATION",
+      entityId: String(appId),
+      action: "APP_CONFIRMED",
+      fromStatus: "SUBMITTED",
+      toStatus: "CONFIRMED",
       actor: me.userId,
     });
   });

@@ -1,0 +1,44 @@
+.root { padding: 1.5rem; }
+.toolbar { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
+.sheet {
+  max-width: 210mm;
+  margin: 0 auto 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid #999;
+  background: white;
+  color: #111;
+  overflow-wrap: anywhere;
+}
+.title { font-size: 1.4rem; font-weight: bold; }
+.identity { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin: .75rem 0; }
+.identity div { display: flex; gap: .5rem; }
+.identity dt, .heading { font-weight: bold; }
+.heading { margin: .75rem 0 .25rem; }
+.items { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.items th, .items td { border: 1px solid #999; padding: .25rem .5rem; text-align: left; white-space: pre-wrap; }
+.items th:first-child { width: 30%; }
+.prose { white-space: pre-wrap; }
+
+@page reviewData { size: A4 portrait; margin: 12mm; }
+@media print {
+  .root { padding: 0; color: black; background: white; }
+  .toolbar { display: none; }
+  .sheet {
+    page: reviewData;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 9pt;
+    line-height: 1.2;
+    break-before: page;
+  }
+  .sheet:first-of-type { break-before: auto; }
+  .title { font-size: 14pt; }
+  .identity { margin: 2mm 0; }
+  .heading { margin: 2mm 0 1mm; break-after: avoid; }
+  .items th, .items td { padding: .6mm 1mm; }
+  .items tr { break-inside: avoid; }
+  .items thead { display: table-header-group; }
+  .prose { orphans: 2; widows: 2; }
+}
