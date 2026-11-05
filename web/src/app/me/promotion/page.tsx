@@ -67,6 +67,10 @@ export default async function MyPromotionPage() {
         <p>회차: {round?.name ?? "-"}</p>
         <p>신청 상태: {app.status}</p>
 
+        {app.resultNotifiedAt && (app.result === "PROMOTED" || app.result === "NOT_PROMOTED") && (
+          <p>심사 결과: <strong>{app.result === "PROMOTED" ? "승진" : "미승진"}</strong></p>
+        )}
+
         {app.returnReason && (
           <p className="text-red-600">보완 요청: {app.returnReason}</p>
         )}

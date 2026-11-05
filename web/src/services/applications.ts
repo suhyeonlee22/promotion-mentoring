@@ -5,6 +5,7 @@ import {
   promotionRound,
   correctionRequest,
   applicationItem,
+  srcEmployee,
 } from "@/db/schema";
 import { BusinessError } from "@/lib/error";
 import type { CurrentUser } from "@/lib/session";
@@ -12,7 +13,7 @@ import type { Tx } from "@/lib/history";
 import { recordHistory } from "@/lib/history";
 import { createNotification } from "@/lib/notify";
 import { recordAccess, getClientIp } from "@/lib/access-log";
-import { TEXT_PLAIN_CONTENT_TYPE_HEADER } from "next/dist/lib/constants";
+import { queueMail } from "@/lib/mail";
 
 // 로그인한 사용자가 직원인지 확인
 // 인사팀이나 심사위원은 직원용 신청서 작성 함수 사용할 수 없음
@@ -668,5 +669,81 @@ export async function confirmApplication(
       toStatus: "CONFIRMED",
       actor: me.userId,
     });
+  });
+}
+
+/** 결과 회차의 확정 신청서에 승진 결과를 등록하거나 변경한다. */
+export async function registerResult(
+  me: CurrentUser | null,
+  appId: number,
+  result: "PROMOTED" | "NOT_PROMOTED",
+): Promise<void> {
+  if (me?.role !== "HR") {
+    throw new BusinessError("FORBIDDEN", "인사팀만 결과를 등록할 수 있습니다.");
+  }
+  if (!Number.isSafeInteger(appId) || appId <= 0) {
+    throw new BusinessError("INVALID_APPLICATION", "올바른 신청서를 선택해 주세요.");
+  }
+  if (result !== "PROMOTED" && result !== "NOT_PROMOTED") {
+    throw new BusinessError("INVALID_RESULT", "승진 또는 미승진을 선택해 주세요.");
+  }
+  await db.transaction(async (tx) => {
+    const [app] = await tx.select().from(application).where(eq(application.appId, appId));
+    if (!app) throw new BusinessError("NOT_FOUND", "신청서를 찾을 수 없습니다.");
+    const [round] = await tx.select().from(promotionRound).where(eq(promotionRound.roundId, app.roundId));
+    if (!round || round.status !== "RESULT") {
+      throw new BusinessError("INVALID_ROUND", "결과 회차에서만 결과를 등록할 수 있습니다.");
+    }
+    if (app.status !== "CONFIRMED") {
+      throw new BusinessError("INVALID_APPLICATION", "확정된 신청서에만 결과를 등록할 수 있습니다.");
+    }
+    if (app.result === result) return;
+    await tx.update(application).set({ result }).where(eq(application.appId, appId));
+    await recordHistory(tx, {
+      entityType: "APPLICATION", entityId: String(appId), action: "RESULT_REGISTERED",
+      fromStatus: app.status, toStatus: app.status,
+      detail: { before: app.result, result }, actor: me.userId,
+    });
+  });
+}
+
+/** 실제 발송 대신 메일 발송함에 결과 안내를 쌓고 새 메일 수를 반환한다. */
+export async function notifyResults(me: CurrentUser | null, roundId: number): Promise<number> {
+  if (me?.role !== "HR") {
+    throw new BusinessError("FORBIDDEN", "인사팀만 결과 안내를 발송할 수 있습니다.");
+  }
+  if (!Number.isSafeInteger(roundId) || roundId <= 0) {
+    throw new BusinessError("INVALID_ROUND", "올바른 회차를 선택해 주세요.");
+  }
+  return db.transaction(async (tx) => {
+    const [round] = await tx.select().from(promotionRound).where(eq(promotionRound.roundId, roundId));
+    if (!round) throw new BusinessError("NOT_FOUND", "회차를 찾을 수 없습니다.");
+    if (round.status !== "RESULT") {
+      throw new BusinessError("INVALID_ROUND", "결과 회차에서만 결과 안내를 발송할 수 있습니다.");
+    }
+    const apps = await tx.select().from(application).where(and(
+      eq(application.roundId, roundId), eq(application.status, "CONFIRMED"),
+    ));
+    let queued = 0;
+    for (const app of apps) {
+      if (app.result !== "PROMOTED" && app.result !== "NOT_PROMOTED") continue;
+      const [employee] = await tx.select().from(srcEmployee).where(eq(srcEmployee.empNo, app.empNo));
+      if (!employee) throw new BusinessError("ERP_NOT_FOUND", "신청자의 인사정보를 찾을 수 없습니다.");
+      const inserted = await queueMail(tx, {
+        dedupKey: `PROMO_RESULT|${roundId}|${app.empNo}`, mailType: "PROMO_RESULT",
+        toEmpNo: app.empNo, toEmail: employee.email,
+        subject: `[승진] ${round.name} 결과 안내`,
+        body: `${employee.name}님, ${round.name} 심사 결과는 ${app.result === "PROMOTED" ? "승진" : "미승진"}입니다. 내 승진 신청서에서 확인해 주세요.`,
+      });
+      if (!inserted) continue;
+      await tx.update(application).set({ resultNotifiedAt: new Date().toISOString() })
+        .where(eq(application.appId, app.appId));
+      await recordHistory(tx, {
+        entityType: "APPLICATION", entityId: String(app.appId), action: "RESULT_NOTIFIED",
+        fromStatus: app.status, toStatus: app.status, detail: { result: app.result }, actor: me.userId,
+      });
+      queued++;
+    }
+    return queued;
   });
 }

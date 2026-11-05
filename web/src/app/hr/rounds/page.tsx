@@ -81,6 +81,11 @@ export default async function HrRoundsPage({
                   >
                     {r.name}
                   </Link>
+                  {r.status === "RESULT" && (
+                    <Link className="ml-3 text-blue-700 underline" href={`/hr/rounds/${r.roundId}/results`}>
+                      결과 등록·안내
+                    </Link>
+                  )}
                 </td>
                 <td className="border p-2">{r.baseDate}</td>
                 <td className="border p-2">
