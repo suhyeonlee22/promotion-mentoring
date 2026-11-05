@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { addDays, addMonths, daysInclusive } from '@/domain/date';
+import { addDays, addMonths, daysInclusive, todayKst } from '@/domain/date';
+
+describe('todayKst', () => {
+  it.each([
+    ['2026-10-31T16:00:00Z', '2026-11-01'],
+    ['2026-10-31T14:59:59Z', '2026-10-31'],
+    ['2026-10-31T15:00:00Z', '2026-11-01'],
+    ['2026-12-31T15:00:00Z', '2027-01-01'],
+    ['2024-02-28T15:00:00Z', '2024-02-29'],
+  ])('%s → %s', (now, expected) => {
+    expect(todayKst(new Date(now))).toBe(expected);
+  });
+});
 
 describe('addMonths', () => {
   it('같은 날짜로 이동한다', () => {

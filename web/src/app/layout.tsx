@@ -43,11 +43,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <>
               <Link href="/hr/rounds">승진 회차 관리</Link>
               <Link href="/hr/mails">메일 발송함</Link>
+              <Link href="/hr/step-mail">승급 안내 메일</Link>
             </>
           )}
           {currentUser?.role === "EMPLOYEE" && (
             <>
               <Link href="/me/promotion">내 승진 신청서</Link>
+              <Link href="/me">내 정보</Link>
               <Link href="/me/mails">내 메일함</Link>
             </>
           )}

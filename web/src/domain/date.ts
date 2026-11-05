@@ -16,6 +16,15 @@ function fromUtc(ms: number): string {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** 실행 서버의 시간대와 무관한 한국 날짜. */
+export function todayKst(now: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)!.value;
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
 /** n일 뒤 (n은 음수 가능). addDays('2026-07-01', 184) → '2027-01-01' */
 export function addDays(date: string, n: number): string {
   return fromUtc(toUtc(date) + n * DAY_MS);

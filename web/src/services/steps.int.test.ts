@@ -4,9 +4,10 @@ import { db } from "@/db/client";
 import { seedAll } from "@/db/seed";
 import * as s from "@/db/schema";
 import * as history from "@/lib/history";
+import * as mail from "@/lib/mail";
 import { BusinessError } from "@/lib/error";
 import type { CurrentUser } from "@/lib/session";
-import { recalcAll, confirmStep, bulkConfirmMatched } from "./steps";
+import { recalcAll, confirmStep, bulkConfirmMatched, sendStepMails } from "./steps";
 const hr: CurrentUser = { userId: "hr01", name: "이인사", role: "HR", empNo: null };
 async function row(empNo: string) { return (await db.select().from(s.stepSchedule).where(eq(s.stepSchedule.empNo, empNo)))[0]; }
 async function histories(action: string) { return db.select().from(s.processHistory).where(eq(s.processHistory.action, action)); }
@@ -108,5 +109,67 @@ describe("STEP 10 차기승급일", () => {
     await expect(bulkConfirmMatched(hr)).rejects.toThrow("history failed");
     expect((await db.select().from(s.stepSchedule)).every((r) => r.confirmedDate === null)).toBe(true);
     expect(await histories("STEP_CONFIRMED")).toHaveLength(0);
+  });
+});
+
+describe("STEP 11 승급 안내 메일", () => {
+  beforeEach(async () => {
+    if (process.env.DATABASE_URL !== "file:test.db") throw new Error("테스트 전용 DB가 아닙니다.");
+    vi.restoreAllMocks(); await seedAll();
+  });
+  it("8.6의 1~7 후 11월 안내 2건, 재실행 0건, 12월 안내 2건 및 정확한 중복 방지 키", async () => {
+    await recalcAll(hr); await recalcAll(hr); await bulkConfirmMatched(hr);
+    for (const empNo of ["U1011", "U1012", "U1010"]) await confirmStep(hr, empNo, { source: "AUTO" });
+    await confirmStep(hr, "U1006", { source: "MANUAL", date: "2027-06-01", reason: "수기 대장 오기 정정" });
+    await confirmStep(hr, "U1008", { source: "MANUAL", date: "2027-03-01", reason: "복직 예정일 기준 임시 확정" });
+    const first = await sendStepMails(hr, "2026-11-01");
+    expect(first).toHaveLength(2);
+    expect(first).toEqual(expect.arrayContaining([
+      expect.objectContaining({ toEmpNo: "U1002", mailType: "STEP_NOTICE", dedupKey: "STEP_NOTICE|U1002|2026-12-01", subject: "[승급] 차기 승급 예정 안내 (2026-12-01)" }),
+      expect.objectContaining({ toEmpNo: "U1010", mailType: "STEP_RESULT", dedupKey: "STEP_RESULT|A-U1010-S", subject: "[승급] 승급 결과 안내 (12호봉)" }),
+    ]));
+    expect(first.find((m) => m.toEmpNo === "U1002")?.body).toContain("이수빈");
+    expect(first.find((m) => m.toEmpNo === "U1010")?.body).toContain("12호봉");
+    expect(await sendStepMails(hr, "2026-11-01")).toEqual([]);
+    const next = await sendStepMails(hr, "2026-12-31");
+    expect(next.map((m) => [m.toEmpNo, m.mailType, m.dedupKey])).toEqual([
+      ["U1003", "STEP_NOTICE", "STEP_NOTICE|U1003|2027-01-01"],
+      ["U1011", "STEP_NOTICE", "STEP_NOTICE|U1011|2027-01-29"],
+    ]);
+    expect(await db.select().from(s.mailOutbox)).toHaveLength(4);
+  });
+  it("미확정이면 예정 안내 0건, ERP 결과 안내 1건 (일정 재계산 전에도 동일)", async () => {
+    const mails = await sendStepMails(hr, "2026-11-01");
+    expect(mails).toMatchObject([{ toEmpNo: "U1010", mailType: "STEP_RESULT" }]);
+    await recalcAll(hr);
+    expect(await sendStepMails(hr, "2026-11-01")).toEqual([]);
+  });
+  it("재직자 조건과 확정값만 사용, 산정 불가 MANUAL 확정도 안내", async () => {
+    await recalcAll(hr); await bulkConfirmMatched(hr);
+    await confirmStep(hr, "U1008", { source: "MANUAL", date: "2026-11-15", reason: "복직 예정일 임시 확정" });
+    await db.update(s.srcEmployee).set({ status: "RETIRED" }).where(eq(s.srcEmployee.empNo, "U1002"));
+    await db.update(s.srcEmployee).set({ status: "RETIRED" }).where(eq(s.srcEmployee.empNo, "U1010"));
+    expect(await sendStepMails(hr, "2026-11-01")).toMatchObject([{ toEmpNo: "U1008", mailType: "STEP_NOTICE", dedupKey: "STEP_NOTICE|U1008|2026-11-15" }]);
+  });
+  it("loadRules 안내 기간을 사용하고 SYSTEM(HR) 실행 지원", async () => {
+    await recalcAll(hr); await bulkConfirmMatched(hr);
+    await db.update(s.ruleConfig).set({ value: "29" }).where(eq(s.ruleConfig.key, "mail.step_notice_days"));
+    await db.update(s.ruleConfig).set({ value: "16" }).where(eq(s.ruleConfig.key, "mail.step_result_days"));
+    expect(await sendStepMails({ ...hr, userId: "SYSTEM" }, "2026-11-01")).toEqual([]);
+  });
+  it("HR 권한, 유효한 기준일 검사 및 메일 생성 실패 시 전체 롤백", async () => {
+    for (const me of [null, { ...hr, role: "EMPLOYEE" as const }, { ...hr, role: "REVIEWER" as const }]) {
+      await expect(sendStepMails(me, "2026-11-01")).rejects.toBeInstanceOf(BusinessError);
+    }
+    for (const today of ["", "2026-02-30", "2026-13-01", "bad"]) await expect(sendStepMails(hr, today)).rejects.toBeInstanceOf(BusinessError);
+    await recalcAll(hr); await bulkConfirmMatched(hr);
+    const original = mail.queueMail;
+    let calls = 0;
+    vi.spyOn(mail, "queueMail").mockImplementation(async (...args) => {
+      if (++calls === 2) throw new Error("mail failed");
+      return original(...args);
+    });
+    await expect(sendStepMails(hr, "2026-11-01")).rejects.toThrow("mail failed");
+    expect(await db.select().from(s.mailOutbox)).toHaveLength(0);
   });
 });

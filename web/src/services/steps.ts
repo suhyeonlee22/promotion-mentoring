@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
-import { srcEmployee, srcAppointment, srcManualStepLedger, stepSchedule } from "@/db/schema";
+import { srcEmployee, srcAppointment, srcManualStepLedger, stepSchedule, mailOutbox } from "@/db/schema";
 import { calcNextStepDate, compareStatus } from "@/domain/step";
 import type { ApptInput } from "@/domain/period";
 import { addDays } from "@/domain/date";
@@ -9,6 +9,47 @@ import { recordHistory, type Tx } from "@/lib/history";
 import { createNotification } from "@/lib/notify";
 import { loadRules } from "@/lib/rules";
 import type { CurrentUser } from "@/lib/session";
+import { queueMail } from "@/lib/mail";
+import { isStepNoticeTarget, isStepResultTarget } from "@/domain/mail-rules";
+
+export type StepMail = typeof mailOutbox.$inferSelect;
+
+/** HR 및 인증된 cron의 SYSTEM(HR) 호출. 실제 발송 없이 발송함에만 기록한다. */
+export async function sendStepMails(me: CurrentUser | null, today: string): Promise<StepMail[]> {
+  assertHr(me);
+  if (typeof today !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(today) || addDays(today, 0) !== today) {
+    throw new BusinessError("INVALID_DATE", "올바른 기준일을 입력해 주세요.");
+  }
+  const rules = await loadRules();
+  return db.transaction(async (tx) => {
+    const employees = await tx.select().from(srcEmployee).where(eq(srcEmployee.status, "ACTIVE"));
+    const schedules = await tx.select().from(stepSchedule);
+    const appointments = await tx.select().from(srcAppointment).where(eq(srcAppointment.apptType, "STEP_UP"));
+    const mails: StepMail[] = [];
+    async function queue(input: Parameters<typeof queueMail>[1]) {
+      if (await queueMail(tx, input)) {
+        const [created] = await tx.select().from(mailOutbox).where(eq(mailOutbox.dedupKey, input.dedupKey));
+        mails.push(created);
+      }
+    }
+    for (const e of employees) {
+      const schedule = schedules.find((s) => s.empNo === e.empNo);
+      if (schedule && isStepNoticeTarget(schedule.confirmedDate, today, rules.stepNoticeDays)) {
+        const date = schedule.confirmedDate!;
+        await queue({ dedupKey: `STEP_NOTICE|${e.empNo}|${date}`, mailType: "STEP_NOTICE",
+          toEmpNo: e.empNo, toEmail: e.email, subject: `[승급] 차기 승급 예정 안내 (${date})`,
+          body: `${e.name}님, 확정 차기승급일은 ${date}입니다.` });
+      }
+      for (const a of appointments.filter((a) => a.empNo === e.empNo)) {
+        if (!isStepResultTarget(a.startDate, today, rules.stepResultDays)) continue;
+        await queue({ dedupKey: `STEP_RESULT|${a.apptId}`, mailType: "STEP_RESULT",
+          toEmpNo: e.empNo, toEmail: e.email, subject: `[승급] 승급 결과 안내 (${a.stepAfter}호봉)`,
+          body: `${e.name}님, ${a.startDate} 승급 발령으로 ${a.stepAfter}호봉이 되었습니다.` });
+      }
+    }
+    return mails;
+  });
+}
 
 function assertHr(me: CurrentUser | null): asserts me is CurrentUser {
   if (me?.role !== "HR") throw new BusinessError("FORBIDDEN", "인사팀만 처리할 수 있습니다.");
