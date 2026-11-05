@@ -83,7 +83,7 @@ export async function recalcAll(me: CurrentUser | null): Promise<{ changed: numb
       await tx.insert(stepSchedule).values(values).onConflictDoUpdate({ target: stepSchedule.empNo, set: values });
       const detail = { before: prev?.autoNextDate ?? null, after: calc.autoNextDate };
       if (changed) summary.changed++;
-      if (changed && calc.autoNextDate) await recordHistory(tx, { entityType: "STEP", entityId: e.empNo, action: "STEP_CALCULATED", detail, actor: me.userId });
+      if (changed) await recordHistory(tx, { entityType: "STEP", entityId: e.empNo, action: "STEP_CALCULATED", detail, actor: me.userId });
       if (review) {
         summary.reviewNeeded++;
         await recordHistory(tx, { entityType: "STEP", entityId: e.empNo, action: "STEP_REVIEW_NEEDED", detail, actor: me.userId });

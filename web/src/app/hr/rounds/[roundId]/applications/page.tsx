@@ -99,7 +99,7 @@ export default async function ApplicationsPage({
               <tr className="border-b">
                 <th className="p-2">사번</th>
                 <th className="p-2">신청서 번호</th>
-                <th className="p-2">상태</th>
+                <th className="p-2">상태</th><th className="p-2">제출일</th>
                 <th className="p-2">정정 대기</th>
               </tr>
             </thead>
@@ -108,7 +108,7 @@ export default async function ApplicationsPage({
                 <tr key={app.appId} className="border-b">
                   <td className="p-2">{app.empNo}</td>
                   <td className="p-2">{app.appId}</td>
-                  <td className="p-2">{app.status}</td>
+                  <td className="p-2">{app.status}</td><td className="p-2">{app.submittedAt ? <time dateTime={app.submittedAt}>{app.submittedAt}</time> : "미제출"}</td>
                   <td className="p-2">
                     {pending.filter((req) => req.appId === app.appId).length}건
                   </td>

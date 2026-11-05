@@ -7,11 +7,8 @@ import {
   promotionRound,
 } from "@/db/schema";
 import { requireRole } from "@/lib/session";
-import {
-  saveDraftAction,
-  submitApplicationAction,
-  requestCorrectionAction,
-} from "./actions";
+import { requestCorrectionAction } from "./actions";
+import ApplicationForm from "./application-form";
 
 export default async function MyPromotionPage() {
   // 1. 직원 권한 확인
@@ -183,57 +180,9 @@ export default async function MyPromotionPage() {
         <h2 className="mb-4 text-lg font-semibold">신청서 작성</h2>
 
         {["NOT_STARTED", "DRAFT", "RETURNED"].includes(app.status) && (
-          <form action={saveDraftAction} className="space-y-4">
-            <input type="hidden" name="appId" value={app.appId} />
-
-            <div>
-              <label htmlFor="achievement" className="mb-2 block font-medium">
-                주요 업무실적 (최대 2,000자)
-              </label>
-              <textarea
-                id="achievement"
-                name="achievement"
-                maxLength={2000}
-                defaultValue={app.achievement ?? ""}
-                rows={6}
-                className="w-full rounded border p-3"
-                placeholder="주요 업무실적을 입력하세요."
-              />
-            </div>
-
-            <div>
-              <label htmlFor="plan" className="mb-2 block font-medium">
-                자기개발 계획 (최대 1,000자)
-              </label>
-              <textarea
-                id="plan"
-                name="plan"
-                maxLength={1000}
-                defaultValue={app.plan ?? ""}
-                rows={4}
-                className="w-full rounded border p-3"
-                placeholder="자기개발 계획을 입력하세요."
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="submit"
-                formAction={saveDraftAction}
-                className="rounded border px-5 py-3"
-              >
-                임시저장
-              </button>
-
-              <button
-                type="submit"
-                formAction={submitApplicationAction}
-                className="rounded bg-blue-600 px-5 py-3 text-white"
-              >
-                최종 제출
-              </button>
-            </div>
-          </form>
+          <ApplicationForm key={app.appId} appId={app.appId} initialState={{
+            error: "", achievement: app.achievement ?? "", plan: app.plan ?? "",
+          }}/>
         )}
 
         {["SUBMITTED", "CONFIRMED"].includes(app.status) && (

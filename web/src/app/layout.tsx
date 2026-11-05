@@ -29,7 +29,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <header className="print:hidden flex items-center justify-between border-b px-6 py-4">
+        <header className="print:hidden flex flex-wrap items-center justify-between gap-4 border-b px-6 py-4">
           {currentUser && (
             <span>
               {currentUser.name} ({currentUser.role})
@@ -44,6 +44,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/hr/rounds">승진 회차 관리</Link>
               <Link href="/hr/mails">메일 발송함</Link>
               <Link href="/hr/step-mail">승급 안내 메일</Link>
+              <Link href="/hr/history">처리 이력</Link>
+              <Link href="/hr/access-logs">접근기록</Link>
+              <Link href="/hr/mock-erp">Mock ERP 편집</Link>
             </>
           )}
           {currentUser?.role === "EMPLOYEE" && (

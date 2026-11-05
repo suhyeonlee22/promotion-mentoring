@@ -39,20 +39,29 @@ export async function saveDraftAction(data: FormData): Promise<void> {
   );
 }
 
-export async function submitApplicationAction(data: FormData): Promise<void> {
+export type SubmissionState = {
+  error: string;
+  achievement: string;
+  plan: string;
+};
+
+export async function submitApplicationAction(
+  _previous: SubmissionState,
+  data: FormData,
+): Promise<SubmissionState> {
   const me = await getCurrentUser();
   const appId = Number(data.get("appId"));
-
-  let error = "";
+  const input = {
+    achievement: String(data.get("achievement") ?? ""),
+    plan: String(data.get("plan") ?? ""),
+  };
 
   try {
-    await submitApplication(me, appId, {
-      achievement: String(data.get("achievement") ?? ""),
-      plan: String(data.get("plan") ?? ""),
-    });
+    await submitApplication(me, appId, input);
   } catch (e) {
     if (e instanceof BusinessError) {
-      error = e.message;
+      // 실패한 입력은 DB나 URL에 쓰지 않고 해당 폼의 응답 상태로만 돌려준다.
+      return { ...input, error: e.message };
     } else {
       throw e;
     }
@@ -60,11 +69,7 @@ export async function submitApplicationAction(data: FormData): Promise<void> {
 
   revalidatePath("/me/promotion");
 
-  redirect(
-    error
-      ? `/me/promotion?error=${encodeURIComponent(error)}`
-      : "/me/promotion?submitted=1",
-  );
+  redirect("/me/promotion?submitted=1");
 }
 
 export async function requestCorrectionAction(data: FormData): Promise<void> {
