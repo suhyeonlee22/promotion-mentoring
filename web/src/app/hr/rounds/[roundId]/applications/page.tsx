@@ -97,10 +97,10 @@ export default async function ApplicationsPage({
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="border-b">
-                <th className="p-2">사번</th>
-                <th className="p-2">신청서 번호</th>
-                <th className="p-2">상태</th><th className="p-2">제출일</th>
-                <th className="p-2">정정 대기</th>
+                <th scope="col" className="p-2">사번</th>
+                <th scope="col" className="p-2">신청서 번호</th>
+                <th scope="col" className="p-2">상태</th><th scope="col" className="p-2">제출일</th>
+                <th scope="col" className="p-2">정정 대기</th>
               </tr>
             </thead>
             <tbody>
@@ -152,8 +152,8 @@ export default async function ApplicationsPage({
                       <input type="hidden" name="roundId" value={roundId} />
                       <input type="hidden" name="reqId" value={req.reqId} />
 
-                      <label className="block font-medium">승인할 값</label>
-                      <input
+                      <label htmlFor={`list-applied-${req.reqId}`} className="block font-medium">승인할 값</label>
+                      <input id={`list-applied-${req.reqId}`}
                         name="appliedValue"
                         defaultValue={req.requestedValue}
                         required
@@ -176,8 +176,8 @@ export default async function ApplicationsPage({
                       <input type="hidden" name="roundId" value={roundId} />
                       <input type="hidden" name="reqId" value={req.reqId} />
 
-                      <label className="block font-medium">반려 사유</label>
-                      <textarea
+                      <label htmlFor={`list-feedback-${req.reqId}`} className="block font-medium">반려 사유</label>
+                      <textarea id={`list-feedback-${req.reqId}`}
                         name="feedback"
                         required
                         rows={2}

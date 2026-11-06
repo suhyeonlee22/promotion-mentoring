@@ -32,7 +32,7 @@ export default async function AccessLogsPage({ searchParams }: PageProps<"/hr/ac
     </form>
     {period.error && <p role="alert">{period.error}</p>}
     <section><h2 className="text-xl font-semibold">사용자별·수행업무별 건수</h2><p>현재 조회 조건 기준 · 총 {rows.length}건</p>
-      <table className="w-full text-left"><thead><tr><th>계정</th><th>수행업무</th><th>건수</th></tr></thead><tbody>{counts.map((c) => <tr key={`${c.userId}|${c.action}`}><td>{c.userId}</td><td>{c.action}</td><td>{c.count}</td></tr>)}</tbody></table>
+      <table className="w-full text-left"><thead><tr><th scope="col">계정</th><th scope="col">수행업무</th><th scope="col">건수</th></tr></thead><tbody>{counts.map((c) => <tr key={`${c.userId}|${c.action}`}><td>{c.userId}</td><td>{c.action}</td><td>{c.count}</td></tr>)}</tbody></table>
     </section>
     <section><h2 className="text-xl font-semibold">접근기록 목록</h2>{!rows.length && <p>접근기록이 없습니다.</p>}
       {rows.map((r) => <article key={r.logId} className="my-3 space-y-2 rounded border p-4"><p><time dateTime={r.actedAt}>{r.actedAt}</time> / 계정: {r.userId} / IP: {r.ip}</p><p>정보주체: {r.subjectEmpNo ?? "여러 명 (대상 참조)"} / 수행업무: {r.action}</p><p>대상: {r.target}</p><p>사유: {r.reason ?? "-"}</p></article>)}

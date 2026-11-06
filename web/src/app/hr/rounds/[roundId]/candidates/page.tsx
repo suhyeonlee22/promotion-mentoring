@@ -114,7 +114,7 @@ export default async function CandidatesPage({
                 "최종 대상",
                 "예외 처리",
               ].map((label) => (
-                <th className="whitespace-nowrap border p-2" key={label}>
+                <th scope="col" className="whitespace-nowrap border p-2" key={label}>
                   {label}
                 </th>
               ))}

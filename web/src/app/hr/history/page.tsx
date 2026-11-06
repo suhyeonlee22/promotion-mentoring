@@ -24,7 +24,7 @@ export default async function HistoryPage({ searchParams }: PageProps<"/hr/histo
   )).orderBy(desc(processHistory.actedAt), desc(processHistory.histId));
   return <main className="space-y-5 p-6"><h1 className="text-2xl font-bold">처리 이력</h1>
     <form method="get" className="flex flex-wrap items-end gap-3">
-      <label>대상 종류 <select name="entityType" defaultValue={entityType} className="border p-2"><option value="">전체</option>{["ROUND", "CANDIDATE", "APPLICATION", "CORRECTION", "STEP"].map((type) => <option key={type}>{type}</option>)}</select></label>
+      <label>대상 종류 <select name="entityType" defaultValue={entityType} className="border p-2"><option value="">전체</option>{["ROUND", "CANDIDATE", "APPLICATION", "CORRECTION", "STEP", "SETTING"].map((type) => <option key={type}>{type}</option>)}</select></label>
       <label>대상 ID <input name="entityId" defaultValue={entityId} className="border p-2"/></label>
       <label>처리자 <input name="actor" defaultValue={actor} className="border p-2"/></label>
       <label>시작일 (UTC) <input type="date" name="from" defaultValue={period.from} className="border p-2"/></label>

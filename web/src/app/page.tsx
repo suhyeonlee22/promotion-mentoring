@@ -5,16 +5,16 @@ export default async function HomePage() {
   const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    redirect("/switch-user");
+    redirect("/login");
   }
 
   if (currentUser.role === "HR") {
-    redirect("/hr/rounds");
+    redirect("/hr");
   }
 
   if (currentUser.role === "EMPLOYEE") {
     redirect("/me");
   }
 
-  redirect("/switch-user");
+  redirect("/login");
 }

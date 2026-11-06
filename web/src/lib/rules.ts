@@ -19,6 +19,10 @@ export type Rules = {
 export async function loadRules(): Promise<Rules> {
   // 1. DB에서 모든 규칙 조회
   const rows = await db.select().from(ruleConfig);
+  return parseRules(rows);
+}
+
+export function parseRules(rows: { key: string; value: string }[]): Rules {
 
   // 2. key-value 형태로 변환
   const config = new Map(

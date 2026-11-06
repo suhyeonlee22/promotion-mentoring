@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/db/seed.ts",
+    "db:passwords": "tsx src/db/set-passwords.ts",
     "db:reset": "drizzle-kit push --force && tsx src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
     "test:prepare": "dotenv run -q -f .env.test -- drizzle-kit push --force",
@@ -17,6 +18,7 @@
   },
   "dependencies": {
     "@libsql/client": "0.18.0",
+    "bcryptjs": "3.0.2",
     "drizzle-orm": "0.45.4",
     "next": "16.4.3",
     "react": "19.3.0",

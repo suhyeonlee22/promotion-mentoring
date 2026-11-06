@@ -8,7 +8,7 @@ export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export async function recordHistory(
   tx: Tx,
   h: {
-    entityType: 'ROUND' | 'CANDIDATE' | 'APPLICATION' | 'CORRECTION' | 'STEP';
+    entityType: 'ROUND' | 'CANDIDATE' | 'APPLICATION' | 'CORRECTION' | 'STEP' | 'SETTING';
     entityId: string;
     action: string;
     fromStatus?: string | null;

@@ -10,6 +10,7 @@
 import 'dotenv/config';
 import { db } from './client';
 import * as s from './schema';
+import { hash } from 'bcryptjs';
 
 type Emp = {
   key: string; // 시나리오 ID (E01 ~ E12)
@@ -164,20 +165,30 @@ async function seedErp() {
   await db.insert(s.srcManualStepLedger).values(MANUAL_LEDGER);
 }
 
-async function seedUsers() {
+async function seedUsers(passwordHash: string) {
   await db.insert(s.appUser).values([
     { userId: 'hr01', name: '이인사 (인사팀)', role: 'HR' },
     ...EMPLOYEES.map((e) => ({ userId: e.empNo.toLowerCase(), name: e.name, role: 'EMPLOYEE', empNo: e.empNo })),
     { userId: 'reviewer01', name: '김심사 (심사위원)', role: 'REVIEWER' },
-  ]);
+  ].map((user) => ({ ...user, passwordHash })));
 }
+
+let cachedPassword = '';
+let cachedHash: Promise<string> | undefined;
 
 /** 모든 테이블을 비우고 시드 데이터를 넣는다. 통합 테스트에서도 호출한다. */
 export async function seedAll() {
+  const password = process.env.SEED_PASSWORD;
+  if (!password || Buffer.byteLength(password, 'utf8') > 72) throw new Error('SEED_PASSWORD를 비어 있지 않은 72바이트 이하 환경변수로 설정해 주세요.');
+  if (password !== cachedPassword || !cachedHash) {
+    cachedPassword = password;
+    cachedHash = hash(password, 10);
+  }
+  const passwordHash = await cachedHash;
   await clearAll();
   await seedRules();
   await seedErp();
-  await seedUsers();
+  await seedUsers(passwordHash);
 }
 
 // `npm run db:seed` 로 직접 실행했을 때만 동작한다 (테스트에서 import 할 때는 실행되지 않음).

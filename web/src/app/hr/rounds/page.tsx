@@ -62,7 +62,7 @@ export default async function HrRoundsPage({
           <tr>
             {["회차명", "기준일", "신청 기간", "상태", "상태 전환"].map(
               (label) => (
-                <th key={label} className="border p-2">
+                <th scope="col" key={label} className="border p-2">
                   {label}
                 </th>
               ),

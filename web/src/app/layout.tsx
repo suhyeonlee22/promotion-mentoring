@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
+import { unreadNotificationCount } from "@/services/notifications";
+import { logoutAction } from "@/app/login/actions";
 export const dynamic = "force-dynamic";
 
 
@@ -23,6 +25,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const currentUser = await getCurrentUser();
+  const unread = await unreadNotificationCount(currentUser);
   return (
     <html
       lang="ko"
@@ -36,11 +39,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </span>
           )}
 
-          <Link href="/switch-user">사용자 전환</Link>
+          {process.env.NODE_ENV !== "production" && <Link href="/switch-user">사용자 전환</Link>}
+          {currentUser ? <form action={logoutAction}><button>로그아웃</button></form> : <Link href="/login">로그인</Link>}
 
 
           {currentUser?.role === "HR" && (
             <>
+              <Link href="/hr">인사팀 홈</Link>
+              <Link href="/hr/notifications">알림 {unread}건 (안 읽음)</Link>
+              <Link href="/hr/settings">기준정보</Link>
               <Link href="/hr/rounds">승진 회차 관리</Link>
               <Link href="/hr/mails">메일 발송함</Link>
               <Link href="/hr/step-mail">승급 안내 메일</Link>

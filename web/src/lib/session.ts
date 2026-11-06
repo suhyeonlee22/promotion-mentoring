@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { db } from "@/db/client";
 import { appUser } from "@/db/schema";
+import { signSession, verifySession } from "./session-token";
+import { BusinessError } from "./error";
 
 const COOKIE = "uid";
 
@@ -17,7 +19,8 @@ export type CurrentUser = {
 
 // 현재 사용자 조회
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const uid = (await cookies()).get(COOKIE)?.value;
+  const token = (await cookies()).get(COOKIE)?.value;
+  const uid = token ? verifySession(token, process.env.SESSION_SECRET ?? "") : null;
 
   if (!uid) return null;
 
@@ -58,10 +61,12 @@ export async function setCurrentUser(
     throw new Error("존재하지 않는 사용자입니다.");
   }
 
-  (await cookies()).set(COOKIE, userId, {
+  if (!process.env.SESSION_SECRET) throw new BusinessError("SESSION_CONFIG", "로그인 설정을 확인해 주세요.");
+  (await cookies()).set(COOKIE, signSession(userId, process.env.SESSION_SECRET), {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
+    secure: process.env.NODE_ENV === "production",
   });
 }
 
@@ -72,7 +77,7 @@ export async function requireRole(
   const user = await getCurrentUser();
 
   if (!user || user.role !== role) {
-    redirect("/switch-user");
+    redirect("/login");
   }
 
   return user;

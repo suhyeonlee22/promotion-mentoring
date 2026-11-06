@@ -80,9 +80,9 @@ export default async function MyPromotionPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b text-left">
-                <th className="p-2">항목</th>
-                <th className="p-2">현재 값</th>
-                <th className="p-2">정정 가능</th>
+                <th scope="col" className="p-2">항목</th>
+                <th scope="col" className="p-2">현재 값</th>
+                <th scope="col" className="p-2">정정 가능</th>
               </tr>
             </thead>
             <tbody>
@@ -123,19 +123,19 @@ export default async function MyPromotionPage() {
                             value={item.itemKey}
                           />
 
-                          <input
+                          <label><span className="sr-only">{item.label} 정정할 값</span><input
                             name="requestedValue"
                             required
                             placeholder="정정할 값"
                             className="w-full rounded border p-2"
-                          />
+                          /></label>
 
-                          <input
+                          <label><span className="sr-only">{item.label} 정정 사유</span><input
                             name="reason"
                             required
                             placeholder="정정 사유"
                             className="w-full rounded border p-2"
-                          />
+                          /></label>
 
                           <button
                             type="submit"
