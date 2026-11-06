@@ -1,4 +1,5 @@
 import * as React from "react";
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
@@ -8,6 +9,7 @@ import * as s from "@/db/schema";
 import { requireRole, type CurrentUser } from "@/lib/session";
 import { createRound, runSelection, changeRoundStatus } from "@/services/rounds";
 import ReviewDataPage from "./page";
+import styles from "./review-data.module.css";
 
 vi.mock("@/lib/session", () => ({ requireRole: vi.fn() }));
 vi.mock("next/headers", () => ({
@@ -84,6 +86,9 @@ describe("SCR-06 심사자료 인쇄", () => {
     const html = renderToStaticMarkup(await openPage(roundId));
     expect(html).toContain("확정된 신청서가 없습니다.");
     expect(html).not.toContain("<article");
+    expect(html).toContain('role="status"');
+    expect(html).not.toContain('type="button"');
+    expect(html).toContain("\uC778\uC1C4\uD558\uC9C0 \uB9C8\uC138\uC694.");
     expect(await db.select().from(s.accessLog)).toHaveLength(0);
   });
 
@@ -94,5 +99,43 @@ describe("SCR-06 심사자료 인쇄", () => {
     vi.mocked(requireRole).mockRejectedValueOnce(new Error("FORBIDDEN"));
     await expect(openPage(1)).rejects.toThrow("FORBIDDEN");
     expect(await db.select().from(s.accessLog)).toHaveLength(0);
+  });
+
+  it("CSV 사유와 다운로드 폼은 화면에 유지하고 전체 영역은 인쇄에서 제외한다", async () => {
+    const roundId = await createRound(hr, roundInput);
+    const html = renderToStaticMarkup(await openPage(roundId));
+    const section = html.match(/<section\b[^>]*>[\s\S]*?<\/section>/g)!.find((s) => s.includes("CSV 다운로드"))!;
+    expect(section).toContain(`class="${styles.toolbar} ${styles.screenOnly}"`);
+    expect(section).toContain('id="download-reason"');
+    expect(section).toContain('name="reason" required=""');
+    expect(section).toContain('method="post"');
+    expect(section).toContain(`action="/hr/rounds/${roundId}/review-data/csv"`);
+    expect(section).toContain('type="submit"');
+    const css = readFileSync("src/app/hr/rounds/[roundId]/review-data/review-data.module.css", "utf8");
+    const [screen, print] = css.split("@media print");
+    expect(screen).not.toMatch(/display:\s*none/);
+    expect(print).toMatch(/\.toolbar,\s*\.screenOnly\s*\{\s*display:\s*none\s*!important;/);
+    expect(await db.select().from(s.accessLog)).toHaveLength(0);
+  });
+
+  it("장문 신청서 원문을 보존하고 A4·페이지 분리·줄바꿈·내용 흐름 규칙을 유지한다", async () => {
+    const roundId = await createRound(hr, roundInput);
+    const achievement = "가".repeat(2000);
+    const plan = "나".repeat(1000);
+    await db.insert(s.application).values({ roundId, empNo: "U1001", status: "CONFIRMED", achievement, plan });
+    const html = renderToStaticMarkup(await openPage(roundId));
+    const article = html.match(/<article\b[^>]*>[\s\S]*?<\/article>/)![0];
+    expect(article).toContain(achievement);
+    expect(article).toContain(plan);
+    expect(article).not.toContain(styles.screenOnly);
+    const css = readFileSync("src/app/hr/rounds/[roundId]/review-data/review-data.module.css", "utf8");
+    expect(css).toContain("size: A4 portrait; margin: 12mm;");
+    expect(css).toContain("break-before: page;");
+    expect(css).toContain("overflow-wrap: anywhere;");
+    expect(css).toContain("white-space: pre-wrap;");
+    expect(css).toContain("break-inside: avoid;");
+    expect(css).not.toMatch(/(?:^|[;{])\s*(?:max-)?height\s*:/m);
+    expect(css).not.toMatch(/overflow(?:-y)?:\s*(?:hidden|clip)/);
+    // HTML/CSS 검사이며 실제 인쇄 엔진의 페이지 수/겹침 검증은 아니다.
   });
 });

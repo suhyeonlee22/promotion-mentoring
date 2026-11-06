@@ -43,6 +43,8 @@ it("정정 대기 제출 실패: 미저장 입력·공백·줄바꿈 보존, 같
   expect(html).toContain('role="alert"'); expect(html).toContain(state.error);
   expect(html).toContain("  수정한 업무실적\n둘째 줄 &amp; &lt;검토&gt;  ");
   expect(html).toContain(revised.plan); expect(html).not.toContain(initial.achievement);
+  expect(html).toContain('aria-describedby="achievement-count"');
+  expect(html).toContain(`<p id="achievement-count">${revised.achievement.length} / 2,000자</p>`);
   expect(html).toContain("임시저장"); expect(html).toContain('maxLength="2000"');
   expect(await snapshot()).toEqual(before);
   expect(redirect).not.toHaveBeenCalled(); expect(revalidatePath).not.toHaveBeenCalled();

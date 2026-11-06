@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/primitives";
+import Link from "next/link";
 import { PageHeader, Surface, DataTable, StatusBadge } from "@/components/ui/workspace";
 import { eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
@@ -109,7 +110,7 @@ export default async function ApplicationsPage({
               {apps.map((app) => (
                 <tr key={app.appId} className="border-b">
                   <td className="p-2">{app.empNo}</td>
-                  <td className="p-2">{app.appId}</td>
+                  <td className="p-2"><Link prefetch={false} href={`/hr/applications/${app.appId}`} aria-label={`신청서 ${app.appId} 상세 보기 (${app.empNo})`}>{app.appId}</Link></td>
                   <td className="p-2"><StatusBadge status={app.status}/></td><td className="p-2">{app.submittedAt ? <time dateTime={app.submittedAt}>{app.submittedAt}</time> : "미제출"}</td>
                   <td className="p-2">
                     {pending.filter((req) => req.appId === app.appId).length}건

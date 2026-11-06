@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/primitives";
 
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { saveDraftAction, submitApplicationAction, type SubmissionState } from "./actions";
 
 export default function ApplicationForm({ appId, initialState }: {
@@ -10,6 +10,7 @@ export default function ApplicationForm({ appId, initialState }: {
   initialState: SubmissionState;
 }) {
   const [state, submit, pending] = useActionState(submitApplicationAction, initialState);
+  const [achievementLength, setAchievementLength] = useState(initialState.achievement.length);
 
   return <form action={submit} className="space-y-4">
     <input type="hidden" name="appId" value={appId}/>
@@ -17,8 +18,11 @@ export default function ApplicationForm({ appId, initialState }: {
     <div>
       <label htmlFor="achievement" className="mb-2 block font-medium">주요 업무실적 (최대 2,000자)</label>
       <textarea id="achievement" name="achievement" maxLength={2000}
+        aria-describedby="achievement-count"
+        onChange={(event) => setAchievementLength(event.currentTarget.value.length)}
         defaultValue={state.achievement} rows={6} className="w-full rounded border p-3"
         placeholder="주요 업무실적을 입력하세요."/>
+      <p id="achievement-count">{achievementLength} / 2,000자</p>
     </div>
     <div>
       <label htmlFor="plan" className="mb-2 block font-medium">자기개발 계획 (최대 1,000자)</label>

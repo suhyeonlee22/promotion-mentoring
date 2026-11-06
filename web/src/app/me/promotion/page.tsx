@@ -56,6 +56,9 @@ export default async function MyPromotionPage() {
     .from(correctionRequest)
     .where(eq(correctionRequest.appId, app.appId));
 
+  const editable = app.status === "RETURNED" ||
+    (round?.status === "APPLYING" && ["NOT_STARTED", "DRAFT"].includes(app.status));
+
   return (
     <main className="workspace-page">
       <PageHeader description="신청 내용을 확인하고 업무실적과 자기개발 계획을 작성하세요." className="text-2xl font-bold">내 승진 신청서</PageHeader>
@@ -83,17 +86,13 @@ export default async function MyPromotionPage() {
             <thead>
               <tr className="border-b text-left">
                 <th scope="col" className="p-2">항목</th>
+                <th scope="col" className="p-2">ERP 값</th>
                 <th scope="col" className="p-2">현재 값</th>
                 <th scope="col" className="p-2">정정 가능</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item) => {
-                const editable =
-                  app.status === "RETURNED" ||
-                  (round?.status === "APPLYING" &&
-                    ["NOT_STARTED", "DRAFT"].includes(app.status));
-
                 const hasPending = corrections.some(
                   (req) =>
                     req.itemKey === item.itemKey && req.status === "PENDING",
@@ -103,6 +102,7 @@ export default async function MyPromotionPage() {
                   <tr key={item.itemKey} className="border-b">
                     <td className="p-2">{item.label}</td>
 
+                    <td className="p-2">{item.erpValue}</td>
                     <td className="p-2">{item.currentValue}</td>
 
                     <td className="p-2">
@@ -168,7 +168,7 @@ export default async function MyPromotionPage() {
                 <p>항목: {req.itemKey}</p>
                 <p>요청 값: {req.requestedValue}</p>
                 <p>사유: {req.reason}</p>
-                <p>상태: {req.status}</p>
+                <p>상태: <StatusBadge status={req.status}/></p>
                 {req.feedback && <p>처리 의견: {req.feedback}</p>}
                 {req.appliedValue && <p>반영 값: {req.appliedValue}</p>}
               </div>
@@ -181,10 +181,18 @@ export default async function MyPromotionPage() {
       <Surface className="rounded-lg border p-4">
         <h2 className="mb-4 text-lg font-semibold">신청서 작성</h2>
 
-        {["NOT_STARTED", "DRAFT", "RETURNED"].includes(app.status) && (
+        {editable && (
           <ApplicationForm key={app.appId} appId={app.appId} initialState={{
             error: "", achievement: app.achievement ?? "", plan: app.plan ?? "",
           }}/>
+        )}
+
+        {!editable && ["NOT_STARTED", "DRAFT"].includes(app.status) && (
+          <div className="space-y-3">
+            <p>현재 회차에서는 작성·제출할 수 없습니다.</p>
+            <p>주요 업무실적: {app.achievement}</p>
+            <p>자기개발 계획: {app.plan}</p>
+          </div>
         )}
 
         {["SUBMITTED", "CONFIRMED"].includes(app.status) && (

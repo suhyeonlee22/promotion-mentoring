@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { seedAll } from "@/db/seed";
-import { application, promotionRound } from "@/db/schema";
+import { application, applicationItem, correctionRequest, promotionRound } from "@/db/schema";
 import { requireRole } from "@/lib/session";
 import MyPromotionPage from "./page";
 
@@ -41,4 +41,28 @@ describe("SCR-22 결과 공개 시점", () => {
     expect(html).toContain("심사 결과:");
     expect(html).toContain(`<strong>${result === "PROMOTED" ? "승진" : "미승진"}</strong>`);
   });
+
+  it.each([
+    ["REVIEWING", "NOT_STARTED", false], ["REVIEWING", "DRAFT", false],
+    ["REVIEWING", "RETURNED", true], ["APPLYING", "DRAFT", true],
+  ])("%s 회차의 %s 신청서 작성 가능 여부는 %s", async (roundStatus, status, editable) => {
+    await db.update(promotionRound).set({ status: roundStatus }).where(eq(promotionRound.roundId, 1));
+    await db.update(application).set({ status }).where(eq(application.appId, 1));
+    const html = renderToStaticMarkup(await MyPromotionPage());
+    expect(html.includes('name="achievement"')).toBe(editable);
+    expect(html.includes("현재 회차에서는 작성·제출할 수 없습니다.")).toBe(!editable);
+  });
+
+  it.each([["PENDING", "처리 대기"], ["APPROVED", "승인"], ["REJECTED", "반려"]])(
+    "정정 %s 상태를 한글로 표시하고 ERP 원본과 현재 값을 함께 표시", async (status, label) => {
+      await db.insert(applicationItem).values({ appId: 1, itemKey: "training_2025", label: "2025년 교육이수시간", sortOrder: 12, erpValue: "20", currentValue: "32", correctable: "Y" });
+      await db.insert(correctionRequest).values({ appId: 1, itemKey: "training_2025", requestedValue: "32", reason: "외부 교육 누락", status, requestedAt: "2026-11-01T00:00:00Z" });
+      const html = renderToStaticMarkup(await MyPromotionPage());
+      expect(html).toContain('scope="col" class="p-2">ERP 값</th>');
+      expect(html).toContain('<td class="p-2">20</td>');
+      expect(html).toContain('<td class="p-2">32</td>');
+      expect(html).toContain(`상태: <span data-status="${status}">`);
+      expect(html).toContain(`>${label}</span>`);
+    },
+  );
 });

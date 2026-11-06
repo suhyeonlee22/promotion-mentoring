@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { expect, it } from "vitest";
+import nextConfig from "../../next.config";
+
+it("Tailwind 변환은 전역 CSS에만 적용하여 CSS Modules 클래스 맵을 보존한다", () => {
+  expect(Object.keys(nextConfig.turbopack!.rules!)).toEqual(["globals.css"]);
+  expect(nextConfig.turbopack!.rules!["*.css"]).toBeUndefined();
+});
 
 // 라우팅/폼 계약을 유지하면서 화면 구성 요소만 바꾸는지 확인한다.
 const pages = [

@@ -4,7 +4,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { seedAll } from "@/db/seed";
-import { application, promotionRound } from "@/db/schema";
+import { accessLog, application, promotionRound } from "@/db/schema";
 import { requireRole } from "@/lib/session";
 import ApplicationsPage from "./rounds/[roundId]/applications/page";
 vi.mock("@/lib/session", () => ({ requireRole: vi.fn() }));
@@ -35,6 +35,19 @@ it("보완 요청 상태에서도 마지막 제출 시각을 그대로 표시", 
   await db.update(application).set({ status: "RETURNED" }).where(eq(application.appId, 1));
   const html = renderToStaticMarkup(await page());
   expect(html).toContain(submittedAt); expect(html).toContain("RETURNED");
+});
+it("각 신청서 번호는 해당 상세 경로로 연결하고 목록 조회 자체는 접근기록을 만들지 않음", async () => {
+  const before = await db.select().from(accessLog);
+  const html = renderToStaticMarkup(await page());
+  const rows = html.match(/<tr[^>]*>.*?<\/tr>/g)!;
+  for (const [empNo, appId] of [["U1001", 1], ["U1002", 2]] as const) {
+    const row = rows.find((r) => r.includes(empNo))!;
+    expect(row).toContain(`href="/hr/applications/${appId}"`);
+    expect(row).toContain(`aria-label="신청서 ${appId} 상세 보기 (${empNo})"`);
+    expect(row).toContain(`>${appId}</a>`);
+  }
+  expect(requireRole).toHaveBeenCalledWith("HR");
+  expect(await db.select().from(accessLog)).toEqual(before);
 });
 it("HR 권한 실패 시 제출일을 포함한 목록 조회 차단", async () => {
   vi.mocked(requireRole).mockRejectedValueOnce(new Error("FORBIDDEN"));

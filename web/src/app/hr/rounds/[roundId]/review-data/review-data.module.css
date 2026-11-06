@@ -22,7 +22,7 @@
 @page reviewData { size: A4 portrait; margin: 12mm; }
 @media print {
   .root { padding: 0; color: black; background: white; }
-  .toolbar { display: none; }
+  .toolbar, .screenOnly { display: none !important; }
   .sheet {
     page: reviewData;
     max-width: none;

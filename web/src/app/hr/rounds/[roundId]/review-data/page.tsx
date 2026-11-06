@@ -54,7 +54,7 @@ export default async function ReviewDataPage({
           {apps.length > 0 && <PrintButton />}
         </div>
       </div>
-      {apps.length === 0 && <p>확정된 신청서가 없습니다.</p>}
+      {apps.length === 0 && <p role="status">확정된 신청서가 없습니다. 인쇄할 심사 자료가 없으므로 인쇄하지 마세요. 신청서 확정 후 인쇄할 수 있습니다.</p>}
       {apps.map((app) => {
         const appItems = items.filter((item) => item.appId === app.appId);
         const value = (key: string) => appItems.find((item) => item.itemKey === key)?.currentValue ?? "-";
@@ -83,7 +83,7 @@ export default async function ReviewDataPage({
           </article>
         );
       })}
-      <section className={styles.toolbar}>
+      <section className={`${styles.toolbar} ${styles.screenOnly}`}>
         <h2 className="text-xl font-semibold">CSV 다운로드</h2>
         <form method="post" action={`/hr/rounds/${roundId}/review-data/csv`} className="space-y-2">
           <label htmlFor="download-reason" className="block">다운로드 사유 (필수)</label>
