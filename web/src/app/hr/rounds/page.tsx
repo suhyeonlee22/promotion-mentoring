@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/primitives";
+import { PageHeader, DataTable, StatusBadge } from "@/components/ui/workspace";
 import Link from "next/link";
 import { desc } from "drizzle-orm";
 import { db } from "@/db/client";
@@ -21,8 +23,8 @@ export default async function HrRoundsPage({
     REVIEWING: "RESULT",
   } as const;
   return (
-    <main className="mx-auto max-w-6xl space-y-6 p-6">
-      <h1 className="text-2xl font-bold">승진 회차 관리</h1>
+    <main className="workspace-page">
+      <PageHeader description="회차를 생성하고 승진 업무의 진행 상태를 관리합니다." className="text-2xl font-bold">승진 회차 관리</PageHeader>
       {typeof error === "string" && (
         <p role="alert" className="text-red-700">
           {error}
@@ -52,11 +54,11 @@ export default async function HrRoundsPage({
           신청 종료일{" "}
           <input name="applyEnd" type="date" required className="border p-2" />
         </label>
-        <button className="rounded bg-blue-700 px-4 py-2 text-white">
+        <Button variant="primary" className="rounded bg-blue-700 px-4 py-2 text-white">
           회차 생성
-        </button>
+        </Button>
       </form>
-      <table className="w-full border-collapse text-left">
+      <DataTable className="w-full border-collapse text-left">
         <caption className="sr-only">승진 회차 목록</caption>
         <thead>
           <tr>
@@ -75,14 +77,14 @@ export default async function HrRoundsPage({
             return (
               <tr key={r.roundId}>
                 <td className="border p-2">
-                  <Link
+                  <Link prefetch={false}
                     className="text-blue-700 underline"
                     href={`/hr/rounds/${r.roundId}/candidates`}
                   >
                     {r.name}
                   </Link>
                   {r.status === "RESULT" && (
-                    <Link className="ml-3 text-blue-700 underline" href={`/hr/rounds/${r.roundId}/results`}>
+                    <Link prefetch={false} className="ml-3 text-blue-700 underline" href={`/hr/rounds/${r.roundId}/results`}>
                       결과 등록·안내
                     </Link>
                   )}
@@ -92,16 +94,16 @@ export default async function HrRoundsPage({
                   {r.applyStart} ~ {r.applyEnd}
                 </td>
                 <td className="border p-2">
-                  {ROUND_STATUS[r.status as keyof typeof ROUND_STATUS]}
+                  <StatusBadge status={r.status}>{ROUND_STATUS[r.status as keyof typeof ROUND_STATUS]}</StatusBadge>
                 </td>
                 <td className="border p-2">
                   {to && (
                     <form action={statusAction}>
                       <input type="hidden" name="roundId" value={r.roundId} />
                       <input type="hidden" name="to" value={to} />
-                      <button className="rounded border px-3 py-1">
+                      <Button className="rounded border px-3 py-1">
                         {ROUND_STATUS[to]}으로 전환
-                      </button>
+                      </Button>
                     </form>
                   )}
                 </td>
@@ -109,7 +111,7 @@ export default async function HrRoundsPage({
             );
           })}
         </tbody>
-      </table>
+      </DataTable>
       {!rounds.length && <p>등록된 회차가 없습니다.</p>}
     </main>
   );

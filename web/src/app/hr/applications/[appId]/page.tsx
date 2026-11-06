@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/primitives";
+import { PageHeader, Surface, DataTable, StatusBadge } from "@/components/ui/workspace";
 import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
 import { cache } from "react";
 import { notFound } from "next/navigation";
@@ -89,8 +91,8 @@ export default async function ApplicationsPage({
   await recordApplicationView(me.userId, await getClientIp(), appId, app.empNo);
 
   return (
-    <main className="space-y-8 p-6">
-      <h1 className="text-2xl font-bold">신청서 #{appId} — 검토</h1>
+    <main className="workspace-page">
+      <PageHeader description="원본과 현재 값을 비교하고 신청서 검토를 진행합니다." className="text-2xl font-bold">신청서 #{appId} — 검토</PageHeader>
       <p>회차명: {round.name}</p>
       {errorMessage && (
         <p className="text-red-600" role="alert">
@@ -100,11 +102,11 @@ export default async function ApplicationsPage({
       <p>사번: {app.empNo}</p>
       <p>이름: {employee.name}</p>
       <p>소속: {org?.orgName ?? "조직 정보 없음"}</p>
-      <p>신청서 상태: {APP_STATUS[app.status as keyof typeof APP_STATUS] ?? app.status}</p>
-      <section>
+      <p>신청서 상태: <StatusBadge status={app.status}>{APP_STATUS[app.status as keyof typeof APP_STATUS] ?? app.status}</StatusBadge></p>
+      <Surface>
         <h2 className="mb-4 text-xl font-semibold">주요 데이터</h2>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
+          <DataTable className="w-full border-collapse text-left">
             <thead><tr className="border-b">
               <th className="p-2" scope="col">항목명</th>
               <th className="p-2" scope="col">ERP 원본 값</th>
@@ -123,14 +125,14 @@ export default async function ApplicationsPage({
                 <td className="p-2">{latest ? correctionStatus(latest.status) : "요청 없음"}</td>
               </tr>;
             })}</tbody>
-          </table>
+          </DataTable>
         </div>
-      </section>
-      <section>
+      </Surface>
+      <Surface>
         <h2 className="mb-4 text-xl font-semibold">정정 요청</h2>
         {requests.length === 0 ? <p>정정 요청이 없습니다.</p> : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
+            <DataTable className="w-full border-collapse text-left">
               <thead><tr className="border-b">
                 <th className="p-2" scope="col">항목</th>
                 <th className="p-2" scope="col">요청 값</th>
@@ -152,14 +154,14 @@ export default async function ApplicationsPage({
                           <input type="hidden" name="reqId" value={req.reqId} />
                           <label className="block" htmlFor={`applied-${req.reqId}`}>승인 반영 값</label>
                           <input id={`applied-${req.reqId}`} name="appliedValue" defaultValue={req.requestedValue} required className="w-full rounded border p-2" />
-                          <button type="submit" className="rounded border px-4 py-2">승인</button>
+                          <Button type="submit" className="rounded border px-4 py-2">승인</Button>
                         </form>
                         <form action={rejectCorrectionAction} className="space-y-2">
                           <input type="hidden" name="appId" value={appId} />
                           <input type="hidden" name="reqId" value={req.reqId} />
                           <label className="block" htmlFor={`feedback-${req.reqId}`}>반려 피드백</label>
                           <textarea id={`feedback-${req.reqId}`} name="feedback" required className="w-full rounded border p-2" />
-                          <button type="submit" className="rounded border px-4 py-2">반려</button>
+                          <Button type="submit" className="rounded border px-4 py-2">반려</Button>
                         </form>
                       </div>
                     ) : req.status === "APPROVED" ? (
@@ -170,38 +172,38 @@ export default async function ApplicationsPage({
                   </td>
                 </tr>
               ))}</tbody>
-            </table>
+            </DataTable>
           </div>
         )}
-      </section>
-      <section className="space-y-4">
+      </Surface>
+      <Surface className="space-y-4">
         <h2 className="text-xl font-semibold">직원 입력</h2>
         <h3 className="font-semibold">주요 업무실적</h3>
         <p className="whitespace-pre-wrap break-words">{app.achievement || "입력된 업무실적이 없습니다."}</p>
         <h3 className="font-semibold">자기개발 계획</h3>
         <p className="whitespace-pre-wrap break-words">{app.plan || "입력된 계획이 없습니다."}</p>
-      </section>
-      <section>
+      </Surface>
+      <Surface>
         {app.status === "SUBMITTED" && (
           <>
             <form action={returnApplicationAction}>
               <input type="hidden" name="appId" value={appId} />
               <label htmlFor="return-reason">보완 요청 사유</label>
               <textarea id="return-reason" name="reason" required />
-              <button type="submit">보완 요청</button>
+              <Button type="submit">보완 요청</Button>
             </form>
             <form action={confirmApplicationAction}>
               <input type="hidden" name="appId" value={appId} />
-              <button type="submit">확정</button>
+              <Button type="submit">확정</Button>
             </form>
           </>
         )}
-      </section>
-      <section>
+      </Surface>
+      <Surface>
         <h2 className="mb-4 text-xl font-semibold">처리 이력 (시간순)</h2>
         {history.length === 0 ? <p>처리 이력이 없습니다.</p> : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left">
+            <DataTable className="w-full border-collapse text-left">
               <thead>
                 <tr className="border-b">
                   <th scope="col" className="p-2">처리 시각</th>
@@ -232,10 +234,10 @@ export default async function ApplicationsPage({
                   );
                 })}
               </tbody>
-            </table>
+            </DataTable>
           </div>
         )}
-      </section>
+      </Surface>
     </main>
   );
 }

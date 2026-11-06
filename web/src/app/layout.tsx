@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Noto_Sans_KR, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
 import { unreadNotificationCount } from "@/services/notifications";
-import { logoutAction } from "@/app/login/actions";
+import { AppShell } from "@/components/layout/app-shell";
 export const dynamic = "force-dynamic";
 
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const notoSans = Noto_Sans_KR({
+  variable: "--font-noto-sans-kr",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -29,44 +29,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${notoSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <header className="print:hidden flex flex-wrap items-center justify-between gap-4 border-b px-6 py-4">
-          {currentUser && (
-            <span>
-              {currentUser.name} ({currentUser.role})
-            </span>
-          )}
-
-          {process.env.NODE_ENV !== "production" && <Link href="/switch-user">사용자 전환</Link>}
-          {currentUser ? <form action={logoutAction}><button>로그아웃</button></form> : <Link href="/login">로그인</Link>}
-
-
-          {currentUser?.role === "HR" && (
-            <>
-              <Link href="/hr">인사팀 홈</Link>
-              <Link href="/hr/notifications">알림 {unread}건 (안 읽음)</Link>
-              <Link href="/hr/settings">기준정보</Link>
-              <Link href="/hr/rounds">승진 회차 관리</Link>
-              <Link href="/hr/mails">메일 발송함</Link>
-              <Link href="/hr/step-mail">승급 안내 메일</Link>
-              <Link href="/hr/history">처리 이력</Link>
-              <Link href="/hr/access-logs">접근기록</Link>
-              <Link href="/hr/mock-erp">Mock ERP 편집</Link>
-            </>
-          )}
-          {currentUser?.role === "EMPLOYEE" && (
-            <>
-              <Link href="/me/promotion">내 승진 신청서</Link>
-              <Link href="/me">내 정보</Link>
-              <Link href="/me/mails">내 메일함</Link>
-            </>
-          )}
-        </header>
-        {/* 각 페이지의 실제 내용 */}
-        {children}
-        </body>
+      <body className="min-h-full">
+        <AppShell user={currentUser} unread={unread} development={process.env.NODE_ENV !== "production"}>{children}</AppShell>
+      </body>
     </html>
   );
 }

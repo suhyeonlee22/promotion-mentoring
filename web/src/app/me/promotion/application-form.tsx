@@ -1,4 +1,6 @@
 "use client";
+import { Button } from "@/components/ui/primitives";
+
 
 import { useActionState } from "react";
 import { saveDraftAction, submitApplicationAction, type SubmissionState } from "./actions";
@@ -25,8 +27,8 @@ export default function ApplicationForm({ appId, initialState }: {
         placeholder="자기개발 계획을 입력하세요."/>
     </div>
     <div className="flex flex-wrap gap-3">
-      <button type="submit" formAction={saveDraftAction} disabled={pending} className="rounded border px-5 py-3">임시저장</button>
-      <button type="submit" disabled={pending} className="rounded bg-blue-600 px-5 py-3 text-white">최종 제출</button>
+      <Button type="submit" formAction={saveDraftAction} disabled={pending} className="rounded border px-5 py-3">임시저장</Button>
+      <Button variant="primary" type="submit" disabled={pending} className="rounded bg-blue-600 px-5 py-3 text-white">최종 제출</Button>
     </div>
   </form>;
 }

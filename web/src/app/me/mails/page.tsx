@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/ui/workspace";
 import { desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db/client";
@@ -15,8 +16,8 @@ export default async function MyMailsPage() {
     .orderBy(desc(mailOutbox.createdAt), desc(mailOutbox.mailId));
 
   return (
-    <main className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold">내 메일함</h1>
+    <main className="workspace-page">
+      <PageHeader description="나에게 도착한 업무 안내 메일을 확인하세요." className="text-2xl font-bold">내 메일함</PageHeader>
       <p>{me.name}님에게 온 메일 {mails.length}건 · 제목을 누르면 본문이 열립니다.</p>
       {mails.length === 0 ? <p>받은 메일이 없습니다.</p> : (
         <div className="space-y-3">

@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/primitives";
+import { PageHeader, Surface, DataTable, StatusBadge } from "@/components/ui/workspace";
 import { eq, inArray } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/db/client";
@@ -71,10 +73,10 @@ export default async function ApplicationsPage({
   }
 
   return (
-    <main className="space-y-8 p-6">
-      <h1 className="text-2xl font-bold">{round.name} — 신청 현황</h1>
+    <main className="workspace-page">
+      <PageHeader description="신청 상태와 제출일을 확인하고 정정 요청을 처리합니다." className="text-2xl font-bold">{round.name} — 신청 현황</PageHeader>
 
-      <section className="rounded-lg border p-4">
+      <Surface className="rounded-lg border p-4">
         <h2 className="mb-4 text-xl font-semibold">신청 상태별 인원</h2>
 
         <div className="flex flex-wrap gap-4">
@@ -88,13 +90,13 @@ export default async function ApplicationsPage({
         <p className="mt-4 font-semibold">
           처리 대기 정정 요청: {pending.length}건
         </p>
-      </section>
+      </Surface>
 
-      <section className="rounded-lg border p-4">
+      <Surface className="rounded-lg border p-4">
         <h2 className="mb-4 text-xl font-semibold">신청서 목록</h2>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
+          <DataTable className="w-full border-collapse text-left">
             <thead>
               <tr className="border-b">
                 <th scope="col" className="p-2">사번</th>
@@ -108,18 +110,18 @@ export default async function ApplicationsPage({
                 <tr key={app.appId} className="border-b">
                   <td className="p-2">{app.empNo}</td>
                   <td className="p-2">{app.appId}</td>
-                  <td className="p-2">{app.status}</td><td className="p-2">{app.submittedAt ? <time dateTime={app.submittedAt}>{app.submittedAt}</time> : "미제출"}</td>
+                  <td className="p-2"><StatusBadge status={app.status}/></td><td className="p-2">{app.submittedAt ? <time dateTime={app.submittedAt}>{app.submittedAt}</time> : "미제출"}</td>
                   <td className="p-2">
                     {pending.filter((req) => req.appId === app.appId).length}건
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </DataTable>
         </div>
-      </section>
+      </Surface>
 
-      <section className="rounded-lg border p-4">
+      <Surface className="rounded-lg border p-4">
         <h2 className="mb-4 text-xl font-semibold">처리 대기 정정 요청</h2>
 
         {pending.length === 0 ? (
@@ -160,12 +162,12 @@ export default async function ApplicationsPage({
                         className="w-full rounded border p-2"
                       />
 
-                      <button
+                      <Button variant="primary"
                         type="submit"
                         className="rounded bg-blue-600 px-4 py-2 text-white"
                       >
                         승인
-                      </button>
+                      </Button>
                     </form>
 
                     {/* 반려 */}
@@ -185,12 +187,12 @@ export default async function ApplicationsPage({
                         className="w-full rounded border p-2"
                       />
 
-                      <button
+                      <Button
                         type="submit"
                         className="rounded border px-4 py-2"
                       >
                         반려
-                      </button>
+                      </Button>
                     </form>
                   </div>
                 </div>
@@ -198,7 +200,7 @@ export default async function ApplicationsPage({
             })}
           </div>
         )}
-      </section>
+      </Surface>
     </main>
   );
 }

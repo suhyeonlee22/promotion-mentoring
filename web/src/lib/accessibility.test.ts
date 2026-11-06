@@ -9,7 +9,7 @@ function files(directory: string): string[] {
 }
 it("입력란 label 연결·표 헤더 scope·양수 tabIndex 부재를 전 화면 소스에서 검사", () => {
   const problems: string[] = [];
-  for (const file of files("src/app")) {
+  for (const file of [...files("src/app"), ...files("src/components")]) {
     const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
     const elements: (ts.JsxOpeningElement | ts.JsxSelfClosingElement)[] = [];
     function walk(node: ts.Node) {

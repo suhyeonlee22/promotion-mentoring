@@ -13,10 +13,10 @@ import { openNotificationAction } from "./notifications/actions";
 import { updateSettingAction } from "./settings/actions";
 import HomePage from "../page";
 import RootLayout from "../layout";
-vi.mock("next/font/google", () => ({ Geist: () => ({ variable: "font-sans" }), Geist_Mono: () => ({ variable: "font-mono" }) }));
+vi.mock("next/font/google", () => ({ Noto_Sans_KR: () => ({ variable: "font-sans" }), Geist_Mono: () => ({ variable: "font-mono" }) }));
 vi.mock("@/lib/session", () => ({ requireRole: vi.fn(), getCurrentUser: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
-vi.mock("next/navigation", () => ({ redirect: (path: string) => { throw new Error(`REDIRECT:${path}`); } }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/hr", redirect: (path: string) => { throw new Error(`REDIRECT:${path}`); } }));
 const hr = { userId: "hr01", name: "인사팀", role: "HR" as const, empNo: null };
 const props = { params: Promise.resolve({}), searchParams: Promise.resolve({}) };
 beforeEach(async () => {

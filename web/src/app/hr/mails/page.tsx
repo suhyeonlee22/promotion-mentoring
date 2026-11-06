@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/primitives";
+import { PageHeader, FilterBar } from "@/components/ui/workspace";
 import { and, desc, eq, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import { mailOutbox } from "@/db/schema";
@@ -16,10 +18,10 @@ export default async function MailsPage({ searchParams }: PageProps<"/hr/mails">
   )).orderBy(desc(mailOutbox.createdAt), desc(mailOutbox.mailId));
 
   return (
-    <main className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold">메일 발송함</h1>
+    <main className="workspace-page">
+      <PageHeader description="저장된 안내 메일을 수신자와 종류별로 조회합니다." className="text-2xl font-bold">메일 발송함</PageHeader>
       <p>실제 이메일 대신 저장된 메일을 확인합니다. 제목을 누르면 본문이 열립니다.</p>
-      <form method="get" className="flex flex-wrap items-end gap-4">
+      <FilterBar method="get" className="flex flex-wrap items-end gap-4">
         <div>
           <label htmlFor="mail-type" className="block">메일 종류</label>
           <select id="mail-type" name="type" defaultValue={type} className="rounded border p-2">
@@ -31,8 +33,8 @@ export default async function MailsPage({ searchParams }: PageProps<"/hr/mails">
           <label htmlFor="mail-recipient" className="block">받는 사람 (사번 또는 이메일)</label>
           <input id="mail-recipient" name="recipient" defaultValue={recipient} className="rounded border p-2" />
         </div>
-        <button type="submit" className="rounded border px-4 py-2">조회</button>
-      </form>
+        <Button type="submit" className="rounded border px-4 py-2">조회</Button>
+      </FilterBar>
       <p>총 {mails.length}건</p>
       {mails.length === 0 ? <p>메일이 없습니다.</p> : (
         <div className="space-y-3">

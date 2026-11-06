@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/primitives";
+import { PageHeader, Surface, DataTable, StatusBadge } from "@/components/ui/workspace";
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
@@ -28,8 +30,8 @@ export default async function MyPromotionPage() {
 
   if (!app) {
     return (
-      <main className="p-6">
-        <h1 className="text-2xl font-bold">내 승진 신청서</h1>
+      <main className="workspace-page">
+        <PageHeader description="신청 내용을 확인하고 업무실적과 자기개발 계획을 작성하세요." className="text-2xl font-bold">내 승진 신청서</PageHeader>
         <p className="mt-4">현재 작성할 신청서가 없습니다.</p>
       </main>
     );
@@ -55,14 +57,14 @@ export default async function MyPromotionPage() {
     .where(eq(correctionRequest.appId, app.appId));
 
   return (
-    <main className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold">내 승진 신청서</h1>
+    <main className="workspace-page">
+      <PageHeader description="신청 내용을 확인하고 업무실적과 자기개발 계획을 작성하세요." className="text-2xl font-bold">내 승진 신청서</PageHeader>
 
-      <section className="rounded-lg border p-4">
+      <Surface className="rounded-lg border p-4">
         <h2 className="text-lg font-semibold">신청 정보</h2>
 
         <p>회차: {round?.name ?? "-"}</p>
-        <p>신청 상태: {app.status}</p>
+        <p>신청 상태: <StatusBadge status={app.status}/></p>
 
         {app.resultNotifiedAt && (app.result === "PROMOTED" || app.result === "NOT_PROMOTED") && (
           <p>심사 결과: <strong>{app.result === "PROMOTED" ? "승진" : "미승진"}</strong></p>
@@ -71,13 +73,13 @@ export default async function MyPromotionPage() {
         {app.returnReason && (
           <p className="text-red-600">보완 요청: {app.returnReason}</p>
         )}
-      </section>
+      </Surface>
 
-      <section className="rounded-lg border p-4">
+      <Surface className="rounded-lg border p-4">
         <h2 className="mb-3 text-lg font-semibold">주요 데이터</h2>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+          <DataTable className="w-full border-collapse">
             <thead>
               <tr className="border-b text-left">
                 <th scope="col" className="p-2">항목</th>
@@ -137,12 +139,12 @@ export default async function MyPromotionPage() {
                             className="w-full rounded border p-2"
                           /></label>
 
-                          <button
+                          <Button variant="primary"
                             type="submit"
                             className="rounded bg-blue-600 px-3 py-2 text-white"
                           >
                             정정 요청
-                          </button>
+                          </Button>
                         </form>
                       )}
                     </td>
@@ -150,11 +152,11 @@ export default async function MyPromotionPage() {
                 );
               })}
             </tbody>
-          </table>
+          </DataTable>
         </div>
-      </section>
+      </Surface>
 
-      <section className="rounded-lg border p-4">
+      <Surface className="rounded-lg border p-4">
         <h2 className="mb-3 text-lg font-semibold">정정 요청 내역</h2>
 
         {corrections.length === 0 ? (
@@ -173,10 +175,10 @@ export default async function MyPromotionPage() {
             ))}
           </div>
         )}
-      </section>
+      </Surface>
 
       {/* 직원 작성 항목 */}
-      <section className="rounded-lg border p-4">
+      <Surface className="rounded-lg border p-4">
         <h2 className="mb-4 text-lg font-semibold">신청서 작성</h2>
 
         {["NOT_STARTED", "DRAFT", "RETURNED"].includes(app.status) && (
@@ -192,7 +194,7 @@ export default async function MyPromotionPage() {
             <p>제출된 신청서는 수정할 수 없습니다.</p>
           </div>
         )}
-      </section>
+      </Surface>
     </main>
   );
 }

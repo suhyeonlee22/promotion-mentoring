@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/primitives";
+import { PageHeader, DataTable, Surface } from "@/components/ui/workspace";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, desc, eq } from "drizzle-orm";
@@ -64,11 +66,11 @@ export default async function CandidatesPage({
   const detail = selected ? evidence[selected.empNo] : undefined;
   const preparing = round.status === "PREPARING";
   return (
-    <main className="space-y-5 p-6">
-      <Link href="/hr/rounds" className="text-blue-700 underline">
+    <main className="workspace-page">
+      <Link prefetch={false} href="/hr/rounds" className="text-blue-700 underline">
         회차 목록
       </Link>
-      <h1 className="text-2xl font-bold">{round.name} — 대상자 선정</h1>
+      <PageHeader description="선정 결과와 판정 근거를 확인하고 예외 대상을 관리합니다." className="text-2xl font-bold">{round.name} — 대상자 선정</PageHeader>
       <p>
         기준일 {round.baseDate} · 상태{" "}
         {ROUND_STATUS[round.status as keyof typeof ROUND_STATUS]}
@@ -86,13 +88,13 @@ export default async function CandidatesPage({
       {preparing && (
         <form action={selectionAction}>
           <input type="hidden" name="roundId" value={roundId} />
-          <button className="rounded bg-blue-700 px-4 py-2 text-white">
+          <Button variant="primary" className="rounded bg-blue-700 px-4 py-2 text-white">
             선정 실행
-          </button>
+          </Button>
         </form>
       )}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left text-sm">
+        <DataTable className="w-full border-collapse text-left text-sm">
           <caption className="sr-only">대상자 판정 결과</caption>
           <thead>
             <tr>
@@ -130,7 +132,7 @@ export default async function CandidatesPage({
               >
                 <td className="border p-2">{c.empNo}</td>
                 <td className="border p-2">
-                  <Link
+                  <Link prefetch={false}
                     className="text-blue-700 underline"
                     href={`?empNo=${c.empNo}#evidence`}
                   >
@@ -172,21 +174,21 @@ export default async function CandidatesPage({
                           defaultValue={c.manualReason ?? ""}
                         />
                       </label>
-                      <button
+                      <Button
                         className="rounded border p-1"
                         name="action"
                         value={c.autoSelected === "Y" ? "EXCLUDE" : "ADD"}
                       >
                         {c.autoSelected === "Y" ? "수동 제외" : "수동 추가"}
-                      </button>
+                      </Button>
                       {c.manualAction !== "NONE" && (
-                        <button
+                        <Button
                           className="rounded border p-1"
                           name="action"
                           value="NONE"
                         >
                           취소
-                        </button>
+                        </Button>
                       )}
                     </form>
                   )}
@@ -194,13 +196,13 @@ export default async function CandidatesPage({
               </tr>
             ))}
           </tbody>
-        </table>
+        </DataTable>
       </div>
       {!candidates.length && (
         <p>선정 실행 후 대상자와 판정 근거를 확인할 수 있습니다.</p>
       )}
       {selected && (
-        <section id="evidence" className="space-y-3 rounded border p-4">
+        <Surface id="evidence" className="space-y-3 rounded border p-4">
           <h2 className="text-xl font-bold">{selected.name} 판정 근거</h2>
           <p>
             선정 시각: {selected.judgedAt}. R1 재직·근무 / R2 소요기간 / R3 징계
@@ -237,7 +239,7 @@ export default async function CandidatesPage({
             <p>없음</p>
           )}
           <p>승진 제한 종료일: {selected.restrictEndDate ?? "-"}</p>
-        </section>
+        </Surface>
       )}
     </main>
   );

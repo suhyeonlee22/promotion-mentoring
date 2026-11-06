@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/primitives";
+import { PageHeader, Surface } from "@/components/ui/workspace";
 import Link from "next/link";
 import { desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
@@ -32,16 +34,16 @@ export default async function MockErpPage({ searchParams }: PageProps<"/hr/mock-
   const appointments = table === "src_appointment" ? await db.select().from(srcAppointment).orderBy(desc(srcAppointment.startDate), srcAppointment.apptId) : [];
   const ledger = table === "src_manual_step_ledger" ? await db.select().from(srcManualStepLedger).orderBy(srcManualStepLedger.empNo) : [];
   const error = queryText(query, "error");
-  return <main className="space-y-6 p-6"><h1 className="text-2xl font-bold">Mock ERP 편집 (실습용)</h1>
-    <p>ERP 자체 수정은 처리 이력을 만들지 않습니다. 변경 후 <Link className="underline" href="/hr/steps">차기승급일 관리에서 재계산</Link>하여 변경 감지를 확인하세요.</p>
-    <nav className="flex gap-4"><Link href="/hr/mock-erp?table=src_appointment">발령 이력 (src_appointment)</Link><Link href="/hr/mock-erp?table=src_manual_step_ledger">수기 승급 대장 (src_manual_step_ledger)</Link></nav>
+  return <main className="workspace-page"><PageHeader description="실습용 원천 데이터를 편집하고 변경 감지를 확인합니다." className="text-2xl font-bold">Mock ERP 편집 (실습용)</PageHeader>
+    <p>ERP 자체 수정은 처리 이력을 만들지 않습니다. 변경 후 <Link prefetch={false} className="underline" href="/hr/steps">차기승급일 관리에서 재계산</Link>하여 변경 감지를 확인하세요.</p>
+    <nav className="flex gap-4"><Link prefetch={false} href="/hr/mock-erp?table=src_appointment">발령 이력 (src_appointment)</Link><Link prefetch={false} href="/hr/mock-erp?table=src_manual_step_ledger">수기 승급 대장 (src_manual_step_ledger)</Link></nav>
     {error && <p role="alert">{error}</p>}{query.saved === "1" && <p role="status">저장했습니다. 필요한 경우 재계산을 실행해 주세요.</p>}
     {table === "src_appointment" ? <>
-      <section className="space-y-3 rounded border p-4"><h2 className="text-xl font-semibold">발령 추가</h2><form action={editMockErpAction} className="space-y-3"><AppointmentFields employees={employees}/><button name="operation" value="ADD" className="rounded border px-4 py-2">추가</button></form></section>
-      <section><h2 className="text-xl font-semibold">발령 목록 · {appointments.length}건</h2>{appointments.map((a) => <details key={a.apptId} className="my-3 rounded border p-4"><summary className="cursor-pointer">{a.apptId} / {a.empNo} {employees.find((e) => e.empNo === a.empNo)?.name} / {a.apptType} {a.subType} / {a.startDate} ~ {a.endDate ?? "-"}</summary>
-        <form action={editMockErpAction} className="my-3 space-y-3"><AppointmentFields row={a} employees={employees}/><button name="operation" value="UPDATE" className="rounded border px-4 py-2">수정 저장</button></form>
-        <form action={editMockErpAction}><input type="hidden" name="apptId" value={a.apptId}/><button name="operation" value="DELETE" className="rounded border px-4 py-2">발령 삭제</button></form>
-      </details>)}</section>
-    </> : <section><h2 className="text-xl font-semibold">수기 대장 목록 · {ledger.length}건</h2>{ledger.map((l) => <form action={editMockErpAction} key={l.empNo} className="my-3 flex flex-wrap items-end gap-3 rounded border p-4"><p>{l.empNo} {employees.find((e) => e.empNo === l.empNo)?.name}</p><input type="hidden" name="empNo" value={l.empNo}/><label>차기승급일 <input type="date" name="nextStepDate" defaultValue={l.nextStepDate ?? ""} className="border p-2"/></label><label>메모 <textarea name="memo" defaultValue={l.memo ?? ""} className="border p-2"/></label><button name="operation" value="LEDGER" className="rounded border px-4 py-2">대장 수정</button></form>)}</section>}
+      <Surface className="space-y-3 rounded border p-4"><h2 className="text-xl font-semibold">발령 추가</h2><form action={editMockErpAction} className="space-y-3"><AppointmentFields employees={employees}/><Button variant="primary" name="operation" value="ADD" className="rounded border px-4 py-2">추가</Button></form></Surface>
+      <Surface><h2 className="text-xl font-semibold">발령 목록 · {appointments.length}건</h2>{appointments.map((a) => <details key={a.apptId} className="my-3 rounded border p-4"><summary className="cursor-pointer">{a.apptId} / {a.empNo} {employees.find((e) => e.empNo === a.empNo)?.name} / {a.apptType} {a.subType} / {a.startDate} ~ {a.endDate ?? "-"}</summary>
+        <form action={editMockErpAction} className="my-3 space-y-3"><AppointmentFields row={a} employees={employees}/><Button variant="primary" name="operation" value="UPDATE" className="rounded border px-4 py-2">수정 저장</Button></form>
+        <form action={editMockErpAction}><input type="hidden" name="apptId" value={a.apptId}/><Button variant="danger" name="operation" value="DELETE" className="rounded border px-4 py-2">발령 삭제</Button></form>
+      </details>)}</Surface>
+    </> : <Surface><h2 className="text-xl font-semibold">수기 대장 목록 · {ledger.length}건</h2>{ledger.map((l) => <form action={editMockErpAction} key={l.empNo} className="my-3 flex flex-wrap items-end gap-3 rounded border p-4"><p>{l.empNo} {employees.find((e) => e.empNo === l.empNo)?.name}</p><input type="hidden" name="empNo" value={l.empNo}/><label>차기승급일 <input type="date" name="nextStepDate" defaultValue={l.nextStepDate ?? ""} className="border p-2"/></label><label>메모 <textarea name="memo" defaultValue={l.memo ?? ""} className="border p-2"/></label><Button variant="primary" name="operation" value="LEDGER" className="rounded border px-4 py-2">대장 수정</Button></form>)}</Surface>}
   </main>;
 }
