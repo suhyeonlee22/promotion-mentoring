@@ -762,8 +762,10 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/api/cron/step-mai
 
 - [ ] 아래 명령은 `200`을 돌려준다
 
+`GENERATE_A_UNIQUE_RANDOM_SECRET`은 안내용 표시입니다. 로컬 `.env`에 별도로 생성해 설정한 `CRON_SECRET`으로 바꾸어 실행하세요. 비밀값이 들어간 명령이나 실행 기록을 Git에 올리지 마세요.
+
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer local-dev-secret" http://localhost:3000/api/cron/step-mail
+curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer GENERATE_A_UNIQUE_RANDOM_SECRET" http://localhost:3000/api/cron/step-mail
 ```
 
 - [ ] `npm test`, `npm run build` 통과 → 커밋

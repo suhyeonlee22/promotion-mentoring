@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+*.env
+*.env.*
 
 # vercel
 .vercel
@@ -43,8 +45,37 @@ next-env.d.ts
 # SQLite DB 파일
 *.db
 *.db-*
+*.db.*
+*.sqlite
+*.sqlite-*
+*.sqlite.*
+*.sqlite3
+*.sqlite3-*
+*.sqlite3.*
+*.sql
+*.sql.*
+*.dump
+*.dump.*
+*.backup
+*.backup.*
+*.bak
+*.bak.*
+backup/
+backups/
+*backup*.zip
+*backup*.7z
+*backup*.tar*
+*backup*.tgz
+
+# Other private-key and certificate containers
+*.key
+*.p12
+*.pfx
 
 # 커밋해도 되는 env 파일 (비밀정보 없음)
 !.env.example
-!.env.test
+!/.env.test
+
+# Keep versioned SQL migrations available for review.
+!drizzle/**/*.sql
 
