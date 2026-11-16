@@ -1,14 +1,11 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
-export function signSession(userId: string, secret: string): string {
-  if (!secret) throw new Error("SESSION_SECRET이 필요합니다.");
-  const signature = createHmac("sha256", secret).update(userId).digest("hex");
-  return `${userId}.${signature}`;
+// 로그인할 때마다 예측하기 어려운 새 토큰 발급
+export function generateSessionToken(): string {
+  return randomBytes(32).toString("hex");
 }
-export function verifySession(token: string, secret: string): string | null {
-  if (!secret) return null;
-  const parts = token.split(".");
-  if (parts.length !== 2 || !parts[0] || !/^[a-f0-9]{64}$/.test(parts[1])) return null;
-  const expected = signSession(parts[0], secret).split(".")[1];
-  return timingSafeEqual(Buffer.from(parts[1], "hex"), Buffer.from(expected, "hex")) ? parts[0] : null;
+
+// DB에는 토큰 원문이 아니라 해시값 저장
+export function hashSessionToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }

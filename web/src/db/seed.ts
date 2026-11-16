@@ -93,7 +93,7 @@ const MANUAL_LEDGER: (typeof s.srcManualStepLedger.$inferInsert)[] = [
 async function clearAll() {
   // 자식 테이블부터 지운다 (FK 순서)
   const tables = [
-    s.reviewScore, s.correctionRequest, s.applicationItem, s.application, s.promotionCandidate, s.promotionRound,
+    s.appSession, s.reviewScore, s.correctionRequest, s.applicationItem, s.application, s.promotionCandidate, s.promotionRound,
     s.stepSchedule, s.mailOutbox, s.notification, s.accessLog, s.processHistory, s.ruleConfig, s.appUser,
     s.srcManualStepLedger, s.srcAward, s.srcTraining, s.srcEvaluation, s.srcAppointment, s.srcEmployee, s.srcOrg,
   ];

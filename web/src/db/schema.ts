@@ -103,6 +103,26 @@ export const appUser = sqliteTable('app_user', {
   passwordHash: text('password_hash'), // P2
 });
 
+/** 로그인 세션: 만료 및 서버 측 무효화를 위한 저장소 */
+export const appSession = sqliteTable(
+  'app_session',
+  {
+    // 세션 토큰을 해시한 값. 각 세션 구분
+    tokenHash: text('token_hash').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => appUser.userId),
+    // 세션 생성 시각
+    createdAt: text('created_at').notNull(),
+    // 세션 만료 시각
+    expiresAt: text('expires_at').notNull(),
+  },
+  (t) => [
+    index('idx_session_user').on(t.userId),
+    index('idx_session_expires').on(t.expiresAt),
+  ],
+);
+
 /** 업무 규칙 숫자 (요구사항 3장 가정값) */
 export const ruleConfig = sqliteTable('rule_config', {
   key: text('key').primaryKey(),
