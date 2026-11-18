@@ -1,36 +1,145 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 직원 승진승급 관리시스템
 
-## Getting Started
+직원의 승진·승급 관련 정보를 관리하는 웹 애플리케이션입니다.
 
-First, run the development server:
+UNIST 「직원 승진승급 프로세스 구축」 제안요청서를 바탕으로 구현한 멘토링 프로젝트입니다.
+
+## 1. 기술 스택
+
+- Next.js 16.4.6 (App Router)
+- React 19
+- TypeScript
+- Drizzle ORM
+- SQLite / Turso
+- Vitest
+- GitHub / Vercel
+
+## 2. 로컬 실행 방법
+
+### 사전 준비
+
+- Node.js 및 npm
+- 프로젝트 소스 코드
+- 환경변수 파일
+
+### 설치 및 실행
+
+프로젝트의 `web` 폴더에서 다음 명령어를 실행합니다.
+
+```bash
+npm install
+```
+
+`.env.example`을 참고하여 `.env` 파일을 작성합니다.
+
+```env
+DATABASE_URL=file:local.db
+DATABASE_AUTH_TOKEN=
+CRON_SECRET=
+SEED_PASSWORD=
+```
+
+각 환경변수의 용도는 다음과 같습니다.
+
+| 변수 | 용도 |
+| --- | --- |
+| DATABASE_URL | 데이터베이스 연결 주소 |
+| DATABASE_AUTH_TOKEN | Turso 데이터베이스 인증 토큰 |
+| CRON_SECRET | 예약 작업 API 인증용 비밀값 |
+| SEED_PASSWORD | 초기 계정 비밀번호 |
+
+실제 비밀값은 GitHub에 업로드하지 않습니다.
+
+데이터베이스를 준비합니다.
+
+```bash
+npm run db:push
+npm run db:seed
+```
+
+개발 서버를 실행합니다.
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 http://localhost:3000 으로 접속합니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 데이터베이스 초기화 주의사항
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`npm run db:push`는 데이터베이스 스키마를 적용하는 명령어입니다.
+실행 전 연결 대상 데이터베이스를 확인해야 합니다.
 
-## Learn More
+`npm run db:seed`는 기존 데이터를 삭제하고 초기 데이터를
+다시 생성하므로 개발용 데이터베이스에서만 실행합니다.
+운영 데이터베이스에서는 실행하지 않습니다.
 
-To learn more about Next.js, take a look at the following resources:
+`npm run db:passwords`는 기존 업무 데이터와 이미 설정된
+비밀번호를 보존하면서 초기 비밀번호를 설정합니다.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`SEED_PASSWORD`는 비어 있지 않은 72바이트 이하의 값이어야 합니다.
+실제 비밀번호는 README에 기록하지 않습니다.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 3. 테스트 및 빌드
 
-## Deploy on Vercel
+테스트 실행:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm test
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+프로덕션 빌드 확인:
+
+```bash
+npm run build
+```
+
+배포 전에 두 명령어가 정상적으로 완료되는지 확인합니다.
+
+## 4. 배포 환경
+
+로컬 환경과 배포 환경은 다음과 같이 구성했습니다.
+
+| 구성 요소 | 로컬 | 배포 환경 |
+| --- | --- | --- |
+| 웹 애플리케이션 | Next.js 개발 서버 | Vercel |
+| 데이터베이스 | SQLite 파일 | Turso |
+| 환경변수 | .env 파일 | Vercel 환경변수 |
+| 예약 작업 | 수동 호출 및 테스트 | Vercel Cron |
+
+## 5. Vercel 배포 방법
+
+1. 프로젝트 코드를 GitHub 저장소에 업로드합니다.
+2. Vercel에서 GitHub 저장소를 연결합니다.
+3. 프로젝트의 Root Directory를 `web`으로 설정합니다.
+4. 필요한 환경변수를 Vercel에 등록합니다.
+5. Turso 데이터베이스의 스키마와 초기 데이터를 준비합니다.
+6. Vercel에서 배포를 진행합니다.
+7. 배포 주소로 접속하여 주요 기능을 확인합니다.
+
+배포 환경에서는 로컬 SQLite 파일 대신 Turso 데이터베이스를 사용합니다.
+
+환경변수의 실제 값과 인증 토큰은 README나 저장소에 공개하지 않습니다.
+
+## 6. 배포 후 확인
+
+다음 항목을 점검합니다.
+
+- 배포된 사이트에 정상적으로 접속할 수 있는가?
+- 역할별 로그인이 정상적으로 작동하는가?
+- 주요 기능이 로컬 환경과 동일하게 동작하는가?
+- 권한이 없는 사용자의 접근이 제한되는가?
+- 로그아웃과 세션 만료가 정상적으로 동작하는가?
+- 예약 작업이 실행되는가?
+- 실행 결과와 오류를 Vercel 로그에서 확인할 수 있는가?
+
+예약 작업은 Vercel의 Cron 설정 및 Observability에서 확인할 수 있습니다.
+
+## 7. 보안 주의사항
+
+- 비밀번호, API 토큰, 비밀키를 저장소에 업로드하지 않습니다.
+- 개발용 계정과 공통 비밀번호를 운영 환경에서 그대로 사용하지 않습니다.
+- 개발 환경 전용 기능이 운영 환경에 노출되지 않도록 확인합니다.
+- 예약 작업 API는 인증된 요청만 처리하도록 합니다.
+- 세션 만료 및 로그아웃 시 세션 무효화 여부를 확인합니다.
+- 사용 중인 패키지의 보안 취약점을 확인하고 업데이트 필요성을 검토합니다.
