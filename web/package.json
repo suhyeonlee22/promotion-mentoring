@@ -20,7 +20,7 @@
     "@libsql/client": "0.18.0",
     "bcryptjs": "3.0.2",
     "drizzle-orm": "0.45.4",
-    "next": "16.4.6",
+    "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
