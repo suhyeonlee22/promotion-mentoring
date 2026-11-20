@@ -14,6 +14,16 @@ import type { CandidateInput } from "@/domain/promotion";
 import type { ItemSource } from "@/domain/items";
 import type { ApptInput } from "@/domain/period";
 
+function groupByEmployee<T extends { empNo: string }>(rows: T[]) {
+  const byEmployee = new Map<string, T[]>();
+  for (const row of rows) {
+    const group = byEmployee.get(row.empNo);
+    if (group) group.push(row);
+    else byEmployee.set(row.empNo, [row]);
+  }
+  return byEmployee;
+}
+
 /** ERP는 읽기만 하며, 같은 트랜잭션에서 조회한 값을 규칙 엔진에 전달한다. */
 export async function loadErpEmployees(reader: Tx | typeof db = db) {
   const employees = await reader
@@ -24,12 +34,15 @@ export async function loadErpEmployees(reader: Tx | typeof db = db) {
   const ratings = await reader.select().from(srcEvaluation);
   const training = await reader.select().from(srcTraining);
   const awards = await reader.select().from(srcAward);
+  const appointmentsByEmployee = groupByEmployee(appointments);
+  const ratingsByEmployee = groupByEmployee(ratings);
+  const trainingByEmployee = groupByEmployee(training);
+  const awardsByEmployee = groupByEmployee(awards);
   return employees.map(({ employee: e, orgName }) => {
     const grade = GRADES.find((g) => g.code === e.grade)?.code;
     if (!grade || (e.status !== "ACTIVE" && e.status !== "RETIRED"))
       throw new Error(`ERP 직원 코드가 올바르지 않습니다: ${e.empNo}`);
-    const appts: ApptInput[] = appointments
-      .filter((a) => a.empNo === e.empNo)
+    const appts: ApptInput[] = (appointmentsByEmployee.get(e.empNo) ?? [])
       .map((a) => {
         if (
           !["HIRE", "PROMOTE", "STEP_UP", "LEAVE", "DISCIPLINE"].includes(
@@ -56,10 +69,9 @@ export async function loadErpEmployees(reader: Tx | typeof db = db) {
       grade,
       hireDate: e.hireDate,
       gradeDate: e.gradeDate,
-      ratings: ratings.filter((r) => r.empNo === e.empNo),
-      training: training.filter((t) => t.empNo === e.empNo),
-      awards: awards
-        .filter((a) => a.empNo === e.empNo)
+      ratings: ratingsByEmployee.get(e.empNo) ?? [],
+      training: trainingByEmployee.get(e.empNo) ?? [],
+      awards: (awardsByEmployee.get(e.empNo) ?? [])
         .map((a) => ({ date: a.awardDate, name: a.awardName })),
       disciplines: appts
         .filter((a) => a.apptType === "DISCIPLINE")

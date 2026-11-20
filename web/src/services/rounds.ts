@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   promotionRound,
@@ -22,6 +22,16 @@ import { buildApplicationItems } from "@/domain/items";
 import { loadErpEmployees } from "./erp";
 
 type ManualAction = "ADD" | "EXCLUDE" | "NONE";
+// 40 candidate rows fit within SQLite's legacy 999 bind-variable limit.
+const CANDIDATE_BATCH_SIZE = 40;
+const { roundId: _roundId, empNo: _empNo, ...candidateUpdateColumns } =
+  getTableColumns(promotionCandidate);
+const candidateConflictUpdate = Object.fromEntries(
+  Object.entries(candidateUpdateColumns).map(([key, column]) => [
+    key,
+    sql`excluded.${sql.identifier(column.name)}`,
+  ]),
+);
 export type SelectionEvidence = Record<
   string,
   {
@@ -113,8 +123,12 @@ export async function runSelection(
       .select()
       .from(promotionCandidate)
       .where(eq(promotionCandidate.roundId, roundId));
+    const previousByEmpNo = new Map(
+      previous.map((candidate) => [candidate.empNo, candidate]),
+    );
     const summary = { total: 0, auto: 0, final: 0 };
     const evidence: SelectionEvidence = {};
+    const candidates: (typeof promotionCandidate.$inferInsert)[] = [];
     const currentEmpNos = new Set(
       employees.filter((e) => e.candidate.grade !== "G3").map((e) => e.empNo),
     );
@@ -133,7 +147,7 @@ export async function runSelection(
     for (const employee of employees) {
       const j = judgeCandidate(employee.candidate, round.baseDate, rules);
       if (!j) continue;
-      const old = previous.find((c) => c.empNo === employee.empNo);
+      const old = previousByEmpNo.get(employee.empNo);
       let manualAction = (old?.manualAction ?? "NONE") as ManualAction;
       let manualReason = old?.manualReason ?? null;
       if (
@@ -153,7 +167,7 @@ export async function runSelection(
         manualReason = null;
       }
       const selected = finalSelected(j.autoSelected, manualAction);
-      const values = {
+      candidates.push({
         roundId,
         empNo: employee.empNo,
         name: employee.items.name,
@@ -173,14 +187,7 @@ export async function runSelection(
         manualReason,
         finalSelected: selected ? "Y" : "N",
         judgedAt: new Date().toISOString(),
-      };
-      await tx
-        .insert(promotionCandidate)
-        .values(values)
-        .onConflictDoUpdate({
-          target: [promotionCandidate.roundId, promotionCandidate.empNo],
-          set: values,
-        });
+      });
       summary.total++;
       if (j.autoSelected) summary.auto++;
       if (selected) summary.final++;
@@ -190,6 +197,15 @@ export async function runSelection(
           (a) => a.apptType === "DISCIPLINE",
         ),
       };
+    }
+    for (let offset = 0; offset < candidates.length; offset += CANDIDATE_BATCH_SIZE) {
+      await tx
+        .insert(promotionCandidate)
+        .values(candidates.slice(offset, offset + CANDIDATE_BATCH_SIZE))
+        .onConflictDoUpdate({
+          target: [promotionCandidate.roundId, promotionCandidate.empNo],
+          set: candidateConflictUpdate,
+        });
     }
     // 판정 근거도 선정 당시 값으로 보존하여 이후 ERP 변경과 섞이지 않게 한다.
     await recordHistory(tx, {
